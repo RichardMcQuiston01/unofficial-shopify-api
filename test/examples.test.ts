@@ -29,7 +29,11 @@ import {
   runLiveCheck,
   type LiveCheckResult,
 } from '../examples/live-check.js';
-import { createDevApp } from '../examples/dev-server.js';
+import {
+  createDevApp,
+  createDevServer,
+  type DevServer,
+} from '../examples/dev-server.js';
 import { withTokenFile } from '../examples/live-support.js';
 import { runLiveBulkMutation } from '../examples/live-bulk-mutation.js';
 import { beginInstall, finishInstall } from '../examples/oauth.js';
@@ -768,5 +772,128 @@ describe('token file', () => {
       empty
     );
     expect(withTokenFile(empty, write('  \n'))).toBe(empty);
+  });
+});
+
+type Call = (path: string, init?: RequestInit) => Promise<Response>;
+
+describe('dev server live checks', () => {
+  const handler =
+    (server: (request: Request) => Promise<Response>, base: string) =>
+    (path: string, init: RequestInit = {}): Promise<Response> =>
+      server(new Request(`${base}${path}`, init));
+
+  const webhookBody: string = JSON.stringify({ id: 42, title: 'Hat' });
+  const signed = (body: string): Record<string, string> => ({
+    'x-shopify-hmac-sha256': createHmac('sha256', config.clientSecret)
+      .update(body)
+      .digest('base64'),
+    'x-shopify-topic': 'products/update',
+    'x-shopify-shop-domain': shop,
+    'x-shopify-webhook-id': 'hook-1',
+    'x-shopify-event-id': 'event-1',
+    'x-shopify-api-version': '2026-10',
+    'x-shopify-triggered-at': new Date().toISOString(),
+    'content-type': 'application/json',
+  });
+
+  it('replays a captured delivery as a duplicate and rejects a tampered one', async () => {
+    const { context } = setup();
+    const devServer: DevServer = createDevServer(context);
+    const open: Call = handler(devServer.app, 'https://app.example.com');
+    const control: Call = handler(devServer.control, 'http://127.0.0.1:3001');
+
+    const before: Response = await control('/replay');
+    expect(before.status).toBe(404);
+
+    const first: Response = await open('/api/webhooks', {
+      method: 'POST',
+      headers: signed(webhookBody),
+      body: webhookBody,
+    });
+    expect(first.status).toBe(200);
+
+    const replay: Response = await control('/replay');
+    expect(replay.status).toBe(200);
+    const replayText: string = await replay.text();
+    expect(replayText).toContain('"duplicate"');
+    expect(replayText).toContain('PASS');
+
+    const tamper: Response = await control('/tamper');
+    expect(tamper.status).toBe(200);
+    const tamperText: string = await tamper.text();
+    expect(tamperText).toContain('HTTP 401');
+    expect(tamperText).toContain('PASS');
+
+    // The tampered attempt did not replace the real capture or break replay.
+    expect((await control('/replay')).status).toBe(200);
+  });
+
+  it('does not let an unsigned request replace the captured delivery', async () => {
+    const { context } = setup();
+    const devServer: DevServer = createDevServer(context);
+    const open: Call = handler(devServer.app, 'https://app.example.com');
+    const control: Call = handler(devServer.control, 'http://127.0.0.1:3001');
+    await open('/api/webhooks', {
+      method: 'POST',
+      headers: signed(webhookBody),
+      body: webhookBody,
+    });
+    const stranger: Response = await open('/api/webhooks', {
+      method: 'POST',
+      body: '{"x":1}',
+    });
+    expect(stranger.status).toBe(401);
+    expect((await control('/replay')).status).toBe(200);
+  });
+
+  it('refreshes the installed offline token and proves the new one works', async () => {
+    const { context, sessions, fake } = setup();
+    const devServer: DevServer = createDevServer(context);
+    const open: Call = handler(devServer.app, 'https://app.example.com');
+    const control: Call = handler(devServer.control, 'http://127.0.0.1:3001');
+
+    expect((await control('/refresh')).status).toBe(400);
+    expect((await control('/refresh?shop=example')).status).toBe(404);
+
+    const install: Response = await open(`/api/auth/install?shop=${shop}`);
+    const state: string =
+      /shopify_oauth_state=([^;]+)/.exec(
+        install.headers.get('set-cookie') ?? ''
+      )?.[1] ?? '';
+    const query: string = signedCallback({
+      code: 'auth-code',
+      shop,
+      state,
+      timestamp: String(Math.floor(Date.now() / 1000)),
+    });
+    await open(`/api/auth/callback?${query}`, {
+      headers: { cookie: `shopify_oauth_state=${state}` },
+    });
+    const installed: Result<Session | null> = await sessions.load(
+      offlineSessionId(shop)
+    );
+    const oldToken: string | undefined = installed.ok
+      ? installed.value?.accessToken
+      : undefined;
+
+    const refreshed: Response = await control('/refresh');
+    const text: string = await refreshed.text();
+    expect(refreshed.status).toBe(200);
+    expect(text).toContain('access token changed: yes');
+    expect(text).toContain('refresh token rotated: yes');
+    expect(text).toContain('new access token works: yes (shop "Fake Shop")');
+    expect(text).toContain('PASS');
+    expect(text).not.toContain('shpat_');
+    expect(text).not.toContain('shprt_');
+
+    const stored: Result<Session | null> = await sessions.load(
+      offlineSessionId(shop)
+    );
+    expect(stored.ok && stored.value?.accessToken).not.toBe(oldToken);
+    const grants: URLSearchParams[] = fake.calls
+      .map((call) => call.form)
+      .filter((form): form is URLSearchParams => form !== undefined);
+    expect(grants.at(-1)?.get('grant_type')).toBe('refresh_token');
   });
 });

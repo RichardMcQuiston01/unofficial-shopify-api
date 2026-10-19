@@ -22,9 +22,15 @@ export interface Payloads {
 }
 /* eslint-enable @typescript-eslint/naming-convention */
 
+export interface WebhookHandlerOptions {
+  /** Called with the outcome of every delivery, for logging. */
+  readonly onResult?: (result: Result<WebhookOutcome>) => void;
+}
+
 /** Builds the route handler: `POST /api/webhooks`. */
 export function createWebhookHandler(
-  context: AppContext
+  context: AppContext,
+  options: WebhookHandlerOptions = {}
 ): (request: Request) => Promise<Response> {
   // One log for the process; use a database or Redis log when you run several instances.
   const deliveryLog: DeliveryLog = createMemoryDeliveryLog();
@@ -58,6 +64,7 @@ export function createWebhookHandler(
         maxAgeSeconds: 48 * 3600,
       }
     );
+    options.onResult?.(result);
     return new Response(null, { status: webhookResponseStatus(result) });
   };
 }
