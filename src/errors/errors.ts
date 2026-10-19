@@ -2,6 +2,7 @@
 export type ShopifyErrorCode =
   | 'CONFIGURATION'
   | 'NETWORK'
+  | 'HTTP'
   | 'AUTHENTICATION'
   | 'THROTTLED'
   | 'GRAPHQL'
@@ -53,6 +54,16 @@ export class ConfigurationError extends ShopifyError {
 export class NetworkError extends ShopifyError {
   constructor(message: string, options: ShopifyErrorOptions = {}) {
     super('NETWORK', message, options);
+  }
+}
+
+/**
+ * Shopify answered with an unexpected HTTP status (404 unknown shop or API
+ * version, 402 frozen shop, 5xx outage) or a body that is not valid JSON.
+ */
+export class HttpError extends ShopifyError {
+  constructor(message: string, options: ShopifyErrorOptions = {}) {
+    super('HTTP', message, options);
   }
 }
 
