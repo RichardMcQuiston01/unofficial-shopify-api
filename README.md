@@ -5,7 +5,7 @@
 
 ## Table of Contents
 
-| [Overview](#overview) | [Getting Started](#getting-started) | [Buy Me a Coffee](#buy-me-a-coffee) | [License](#license) | [Copyright](#copyright) |
+| [Overview](#overview) | [Getting Started](#getting-started) | [Recommended Companions](#recommended-companions) | [Buy Me a Coffee](#buy-me-a-coffee) | [License](#license) | [Copyright](#copyright) |
 
 ## Overview
 
@@ -22,6 +22,46 @@ Framework agnostic TypeScript package for Shopify's API. This package will be in
 ### Usage
 
 ### Examples
+
+[Back to Top](#table-of-contents)
+
+## Recommended Companions
+
+This package has no runtime dependencies and does not bundle storage or
+logging back ends. Two sibling packages by the same author fit it well; use
+them if they suit your project.
+
+| Package                                                                                            | Use it for                                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`@richardmcquiston01/storage-adapters`](https://github.com/RichardMcQuiston01/storage-adapters)   | Persisting OAuth sessions and access tokens. It is an async key-value store with typed results and revisions, with adapters for Postgres, MySQL, SQLite, Redis, S3, Supabase, Firebase, files and browser storage. |
+| [`@richardmcquiston01/error-log-adapter`](https://github.com/RichardMcQuiston01/error-log-adapter) | Routing failures to a sink of your choice (console, webhook, database, CloudWatch, SNS and more). Its `log()` never throws, which matches the `Result`-based errors here.                                          |
+
+Every fallible call in this package returns a `Result`. Forward failures to
+an error-log adapter where you handle them:
+
+```ts
+import { type Result } from '@richardmcquiston01/unofficial-shopify-api';
+import { ConsoleErrorAdapter } from '@richardmcquiston01/error-log-adapter';
+
+const errorLog: ConsoleErrorAdapter = new ConsoleErrorAdapter({
+  prefix: '[shopify]',
+});
+
+async function logIfFailed<T>(result: Result<T>): Promise<void> {
+  if (result.ok) return;
+  await errorLog.log({
+    code: result.error.code,
+    message: result.error.message,
+    cause: result.error,
+    source: 'shopify',
+  });
+}
+```
+
+Session storage will be a small key-value interface (see the
+[roadmap](./ROADMAP.md), milestone M2), so a `storage-adapters` store can sit
+behind it in a few lines. Neither package is a dependency; install only what
+you use.
 
 [Back to Top](#table-of-contents)
 
