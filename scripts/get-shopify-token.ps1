@@ -6,7 +6,9 @@
 .DESCRIPTION
   For Dev Dashboard apps installed on a store in your own organization.
   Sets SHOPIFY_SHOP, SHOPIFY_API_VERSION and SHOPIFY_ADMIN_TOKEN for this
-  PowerShell session only. The token is never printed.
+  PowerShell session, and saves the token to .shopify-token in the project
+  root (git-ignored) so the live checks can find it from any terminal. Use
+  -NoSaveToken to skip the file. The token is never printed.
 
 .EXAMPLE
   .\get-shopify-token.ps1 -Shop your-dev-store -ClientId abc123
@@ -16,7 +18,8 @@ param(
   [Parameter(Mandatory = $true)][string]$Shop,
   [Parameter(Mandatory = $true)][string]$ClientId,
   [string]$ApiVersion = "2026-10",
-  [switch]$SkipLiveCheck
+  [switch]$SkipLiveCheck,
+  [switch]$NoSaveToken
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,6 +67,12 @@ Write-Host "Token received for $shopHost. Expires in $($response.expires_in) sec
 Write-Host "Granted scopes: $($response.scope)"
 if ($response.scope -notmatch "read_products|write_products") {
   Write-Warning "neither read_products nor write_products was granted; the pagination and bulk checks will fail. Release it on the app version and request again."
+}
+
+if (-not $NoSaveToken) {
+  [string]$tokenPath = Join-Path (Split-Path -Parent $PSScriptRoot) ".shopify-token"
+  Set-Content -Path $tokenPath -Value $response.access_token -NoNewline -Encoding ascii
+  Write-Host "Saved the token to $tokenPath (git-ignored; expires in 24 hours)."
 }
 
 if (-not $SkipLiveCheck) {

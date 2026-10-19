@@ -1,4 +1,5 @@
 /** Helpers shared by the live checks in this folder. */
+import { existsSync, readFileSync } from 'node:fs';
 import type {
   Result,
   ShopifyError,
@@ -53,4 +54,17 @@ export function printLiveCheck(results: readonly LiveCheckResult[]): number {
   )
     ? 1
     : 0;
+}
+
+/**
+ * Fills a missing `SHOPIFY_ADMIN_TOKEN` from the git-ignored `.shopify-token`
+ * file that `scripts/get-shopify-token.ps1` writes, so a new terminal does not
+ * need the token set again. An environment variable always wins.
+ */
+export function withTokenFile(env: Env, path: string = '.shopify-token'): Env {
+  if ((env['SHOPIFY_ADMIN_TOKEN'] ?? '') !== '' || !existsSync(path)) {
+    return env;
+  }
+  const token: string = readFileSync(path, 'utf8').trim();
+  return token === '' ? env : { ...env, SHOPIFY_ADMIN_TOKEN: token };
 }

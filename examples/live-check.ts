@@ -32,6 +32,7 @@ import {
   printLiveCheck,
   step,
   unwrap,
+  withTokenFile,
   type Env,
   type LiveCheckResult,
 } from './live-support.js';
@@ -213,5 +214,7 @@ export async function runLiveCheck(
 
 const entry: string | undefined = process.argv[1];
 if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
-  process.exitCode = printLiveCheck(await runLiveCheck(process.env));
+  process.exitCode = printLiveCheck(
+    await runLiveCheck(withTokenFile(process.env))
+  );
 }
