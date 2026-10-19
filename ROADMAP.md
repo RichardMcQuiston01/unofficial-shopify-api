@@ -166,7 +166,9 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ### M6: 1.0.0
 
-- [ ] Live-shop checklist passed on at least one API version.
+- [x] Live-shop checklist passed on at least one API version (2026-10; the
+      embedded token exchange and the Storefront query are not verified live,
+      see `docs/LIVE-TESTING.md`).
 - [x] Freeze public API, semver policy, deprecation policy
       (`docs/VERSIONING.md`, `test/public-api.test.ts`).
 - [x] API-version support policy (track Shopify's quarterly releases; a

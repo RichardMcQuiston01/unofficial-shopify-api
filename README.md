@@ -15,11 +15,21 @@ Framework agnostic TypeScript package for Shopify's API. This package will be in
 
 ## Status and Runtime Support
 
-**Beta.** The API covers the Admin and Storefront GraphQL APIs, OAuth and token
-exchange (including expiring offline tokens and refresh), sessions, webhooks,
-pagination and bulk operations. It is tested with mocked HTTP; the checks that
-need a real shop are listed in [docs/LIVE-TESTING.md](./docs/LIVE-TESTING.md)
-and `npm run live-check`. Expect small API changes before 1.0. See [docs/VERSIONING.md](docs/VERSIONING.md) for the semver, deprecation and Shopify API version policy.
+**1.0.** The public API follows [semver](https://semver.org/); see
+[docs/VERSIONING.md](docs/VERSIONING.md) for what counts as public API, the
+deprecation policy, and which Shopify API versions are supported. The library
+covers the Admin and Storefront GraphQL APIs, OAuth and token exchange
+(including expiring offline tokens and refresh), sessions, webhooks, pagination
+and bulk operations.
+
+It is tested with mocked HTTP on every change, and it has also been checked
+against a real development store (API 2026-10): Admin queries, pagination,
+bulk query and bulk mutation, webhook subscriptions, the OAuth install flow with
+an expiring offline token, token refresh, and real webhook deliveries including
+replay and tamper checks. Two paths are covered by tests only and have **not**
+been verified against a real shop: the embedded app's ID-token exchange and the
+Storefront API client. The full record, and how to repeat it on your own store
+(`npm run live-check`), is in [docs/LIVE-TESTING.md](./docs/LIVE-TESTING.md).
 
 The package has **no runtime dependencies** and uses only web-standard APIs
 (`fetch`, Web Crypto, streams), so it runs where those exist. `npm run
