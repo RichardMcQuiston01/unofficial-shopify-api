@@ -24,52 +24,26 @@ import {
   type BulkOperation,
   type PageInfo,
   type Result,
-  type ShopifyError,
   type StorefrontClient,
   type WebhookSubscription,
 } from '@richardmcquiston01/unofficial-shopify-api';
+import {
+  describeError,
+  printLiveCheck,
+  step,
+  unwrap,
+  type Env,
+  type LiveCheckResult,
+} from './live-support.js';
 
-export interface LiveCheckResult {
-  readonly name: string;
-  readonly status: 'pass' | 'fail' | 'skip';
-  readonly detail: string;
-}
+export { printLiveCheck, type LiveCheckResult };
 
 export interface LiveCheckOptions {
   /** Replaces the global `fetch` (tests only). */
   readonly fetch?: typeof fetch;
 }
 
-type Env = Readonly<Record<string, string | undefined>>;
-
 const defaultBulkQuery: string = '{ products { edges { node { id title } } } }';
-
-function describeError(error: ShopifyError): string {
-  const requestId: string =
-    error.context.requestId === undefined
-      ? ''
-      : ` [request ${error.context.requestId}]`;
-  return `${error.code}: ${error.message}${requestId}`;
-}
-
-async function step(
-  results: LiveCheckResult[],
-  name: string,
-  body: () => Promise<string>
-): Promise<void> {
-  try {
-    results.push({ name, status: 'pass', detail: await body() });
-  } catch (thrown: unknown) {
-    const detail: string =
-      thrown instanceof Error ? thrown.message : String(thrown);
-    results.push({ name, status: 'fail', detail });
-  }
-}
-
-function unwrap<T>(result: Result<T>): T {
-  if (!result.ok) throw new Error(describeError(result.error));
-  return result.value;
-}
 
 interface ShopData {
   readonly shop: { readonly name: string; readonly myshopifyDomain: string };
@@ -235,20 +209,6 @@ export async function runLiveCheck(
     });
   }
   return results;
-}
-
-/** Prints results and returns a process exit code. */
-export function printLiveCheck(results: readonly LiveCheckResult[]): number {
-  for (const result of results) {
-    console.log(
-      `${result.status.toUpperCase().padEnd(5)} ${result.name}: ${result.detail}`
-    );
-  }
-  return results.some(
-    (result: LiveCheckResult): boolean => result.status === 'fail'
-  )
-    ? 1
-    : 0;
 }
 
 const entry: string | undefined = process.argv[1];

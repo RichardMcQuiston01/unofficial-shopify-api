@@ -17,12 +17,20 @@ export interface FakeShopifyOptions {
   readonly rejectAdmin?: boolean;
   /** Respond with this status to the token endpoint. */
   readonly tokenStatus?: number;
+  /** Complete bulk mutations without applying them, so verification fails. */
+  readonly ignoreBulkMutation?: boolean;
+  /** Tags the first product starts with. */
+  readonly productTags?: readonly string[];
 }
 
 export interface FakeShopify {
   readonly fetch: Mock<typeof fetch>;
   readonly calls: FakeCall[];
   readonly webhookSubscriptions: Record<string, unknown>[];
+  /** The first product's tags, changed by bulk mutations and tagsRemove. */
+  readonly productTags: string[];
+  /** The JSONL last uploaded to the staged upload target. */
+  readonly uploads: string[];
 }
 
 const json = (body: unknown, status: number = 200): Response =>
@@ -37,6 +45,8 @@ export function fakeShopify(options: FakeShopifyOptions = {}): FakeShopify {
   const version: string = options.apiVersion ?? '2026-10';
   const calls: FakeCall[] = [];
   const webhookSubscriptions: Record<string, unknown>[] = [];
+  const productTags: string[] = [...(options.productTags ?? [])];
+  const uploads: string[] = [];
   let counter: number = 0;
 
   const bulkOperation = (
@@ -109,6 +119,16 @@ export function fakeShopify(options: FakeShopifyOptions = {}): FakeShopify {
           '{"id":"gid://shopify/Product/1","title":"Hat"}\n{"id":"gid://shopify/Product/2","title":"Scarf"}\n{"id":"gid://shopify/Product/3","title":"Mitten"}\n'
         )
       );
+    }
+    if (url === 'https://upload.example.com/bucket') {
+      const file: FormDataEntryValue | null =
+        init?.body instanceof FormData ? init.body.get('file') : null;
+      const read: Promise<string> =
+        file instanceof Blob ? file.text() : Promise.resolve('');
+      return read.then((text: string): Response => {
+        uploads.push(text);
+        return new Response(null, { status: 201 });
+      });
     }
     if (url === `https://${shop}/api/${version}/graphql.json`) {
       return reply({
@@ -185,6 +205,64 @@ export function fakeShopify(options: FakeShopifyOptions = {}): FakeShopify {
             userErrors: [],
           },
         });
+      case 'LiveBulkProduct':
+        return reply({
+          products: {
+            nodes: [
+              {
+                id: 'gid://shopify/Product/1',
+                title: 'Hat',
+                tags: productTags,
+              },
+            ],
+          },
+        });
+      case 'LiveBulkVerify':
+        return reply({
+          product: {
+            id: 'gid://shopify/Product/1',
+            title: 'Hat',
+            tags: productTags,
+          },
+        });
+      case 'StagedUploadsCreate':
+        return reply({
+          stagedUploadsCreate: {
+            stagedTargets: [
+              {
+                url: 'https://upload.example.com/bucket',
+                resourceUrl: 'https://upload.example.com/bucket/x',
+                parameters: [{ name: 'key', value: 'tmp/1/bulk/vars' }],
+              },
+            ],
+            userErrors: [],
+          },
+        });
+      case 'BulkOperationRunMutation': {
+        if (options.ignoreBulkMutation !== true) {
+          for (const line of uploads.at(-1)?.split('\n') ?? []) {
+            if (line.trim() === '') continue;
+            const parsed: { tags?: string[] } = JSON.parse(line) as {
+              tags?: string[];
+            };
+            productTags.push(...(parsed.tags ?? []));
+          }
+        }
+        return reply({
+          bulkOperationRunMutation: {
+            bulkOperation: bulkOperation('CREATED', { type: 'MUTATION' }),
+            userErrors: [],
+          },
+        });
+      }
+      case 'LiveBulkCleanup': {
+        const removed: string[] = variables['tags'] as string[];
+        for (const tag of removed) {
+          const index: number = productTags.indexOf(tag);
+          if (index !== -1) productTags.splice(index, 1);
+        }
+        return reply({ tagsRemove: { userErrors: [] } });
+      }
       case 'BulkOperationStatus':
         return reply({ node: bulkOperation('COMPLETED') });
       default:
@@ -197,5 +275,5 @@ export function fakeShopify(options: FakeShopifyOptions = {}): FakeShopify {
   };
 
   const mock: Mock<typeof fetch> = vi.fn<typeof fetch>(handler);
-  return { fetch: mock, calls, webhookSubscriptions };
+  return { fetch: mock, calls, webhookSubscriptions, productTags, uploads };
 }
