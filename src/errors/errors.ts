@@ -8,6 +8,7 @@ export type ShopifyErrorCode =
   | 'GRAPHQL'
   | 'USER_ERROR'
   | 'WEBHOOK_VERIFICATION'
+  | 'WEBHOOK_HANDLER'
   | 'STORAGE';
 
 /** Details that make an error traceable back to a specific request. */
@@ -136,6 +137,13 @@ export class UserError extends ShopifyError {
 export class WebhookVerificationError extends ShopifyError {
   constructor(message: string, options: ShopifyErrorOptions = {}) {
     super('WEBHOOK_VERIFICATION', message, options);
+  }
+}
+
+/** A webhook handler failed or threw; Shopify should retry the delivery. */
+export class WebhookHandlerError extends ShopifyError {
+  constructor(message: string, options: ShopifyErrorOptions = {}) {
+    super('WEBHOOK_HANDLER', message, options);
   }
 }
 

@@ -128,10 +128,11 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ### M3: Webhooks (v0.3.0, ~1 week)
 
-- [ ] Timing-safe HMAC verification over raw body (Web Crypto, edge-safe).
-- [ ] Typed topic -> payload map; handler registry.
-- [ ] Subscription registration/sync via GraphQL.
-- **Exit**: verified webhooks processed in the example app.
+- [x] Timing-safe HMAC verification over raw body (Web Crypto, edge-safe).
+- [x] Typed topic -> payload map; handler registry.
+- [x] Subscription registration/sync via GraphQL.
+- **Exit**: unit-tested flows (done); a real delivery from a dev store and the
+  example app still to do.
 
 ### M4: Productivity Helpers (v0.4.0, ~2 weeks)
 
