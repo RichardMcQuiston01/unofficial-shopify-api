@@ -150,14 +150,23 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ### M5: Hardening and Beta (v0.9.0, ~2 weeks)
 
-- [ ] Runtime matrix tests: Node LTS lines, Edge runtime, Workers, Bun.
-- [ ] Bundle-size budget and dependency audit.
-- [ ] Security review (secret handling, no token logging, HMAC edge cases).
-- [ ] Complete docs, cookbook examples (Next.js, Hono, plain Node).
+- [x] Runtime matrix tests: Node 22/24 (ESM and CJS), Bun, Deno, an
+      edge-runtime VM and `workerd` without `nodejs_compat`
+      (`npm run test:runtimes`, a CI job).
+- [x] Bundle-size budget (`npm run check:bundle`), a neutral-platform bundle
+      check that fails on any Node-only import, and a no-dependencies check.
+- [x] Security review (`docs/SECURITY-REVIEW.md`): three findings fixed with
+      tests, plus a canary test that secrets never reach errors, logs or hooks.
+- [x] Complete docs and cookbook examples (Next.js App Router, framework-agnostic
+      handlers, bulk export), type-checked and exercised in tests.
+- [x] Live-shop checklist (`docs/LIVE-TESTING.md`) and a read-only
+      `npm run live-check`.
+- [ ] **Run the live-shop checklist on a development store** (needs the owner).
 - [ ] Public beta; collect feedback.
 
 ### M6: 1.0.0
 
+- [ ] Live-shop checklist passed on at least one API version.
 - [ ] Freeze public API, semver policy, deprecation policy.
 - [ ] API-version support policy (track Shopify's quarterly releases; a
       scheduled workflow opens a PR when a new version ships).

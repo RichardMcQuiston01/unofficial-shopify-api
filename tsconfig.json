@@ -16,7 +16,10 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@richardmcquiston01/unofficial-shopify-api": ["./src/index.ts"]
+    }
   },
-  "include": ["src", "test", "*.config.ts"]
+  "include": ["src", "test", "examples", "*.config.ts"]
 }

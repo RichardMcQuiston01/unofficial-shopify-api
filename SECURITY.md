@@ -12,3 +12,6 @@ a few days.
 This library handles Shopify access tokens, OAuth callbacks and webhook
 signatures. Reports about token leakage, signature-verification bypass or
 unsafe defaults are especially welcome.
+
+A review of the code, with findings and caller responsibilities, is in
+[docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md).

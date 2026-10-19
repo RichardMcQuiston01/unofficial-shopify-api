@@ -257,6 +257,8 @@ export function createGraphqlClient(
         }),
         body,
         signal,
+        // Never follow a redirect: it would carry the access token to another host.
+        redirect: 'manual',
       });
     } catch (thrown: unknown) {
       return err(
@@ -385,6 +387,13 @@ function httpFailure(
       { context, ...(retryAfterMs === undefined ? {} : { retryAfterMs }) }
     );
   }
+  if (status >= 300 && status < 400) {
+    return new HttpError(
+      `${operation} on ${shop}: Shopify answered with a redirect (HTTP ${String(status)}) to ${redirectTarget(response)}. ` +
+        'Redirects are not followed, so credentials never reach another host; the shop may have been renamed or moved.',
+      { context }
+    );
+  }
   const hint: string =
     status === 404
       ? ' The shop or API version was not found; check the shop domain and apiVersion.'
@@ -449,4 +458,15 @@ function stripNoise(query: string): string {
   return query
     .replace(/"""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"/g, '""')
     .replace(/#[^\n]*/g, '');
+}
+
+/** Origin of a redirect's `Location`, without path or query. */
+export function redirectTarget(response: Response): string {
+  const location: string | null = response.headers.get('location');
+  if (location === null) return 'an unknown location';
+  try {
+    return new URL(location, 'https://invalid.invalid').origin;
+  } catch {
+    return 'an unparseable location';
+  }
 }

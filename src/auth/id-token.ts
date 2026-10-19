@@ -71,6 +71,13 @@ export async function validateIdToken(
   token: string,
   params: IdTokenValidationParams
 ): Promise<Result<IdTokenClaims, AuthenticationError>> {
+  if (params.clientSecret.trim() === '' || params.clientId.trim() === '') {
+    return err(
+      new AuthenticationError(
+        'ID token rejected: clientId or clientSecret is empty; pass the app credentials (is an environment variable unset?).'
+      )
+    );
+  }
   const parts: string[] = token.split('.');
   const [encodedHeader, encodedPayload, encodedSignature]: (
     string | undefined

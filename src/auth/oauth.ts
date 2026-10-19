@@ -164,6 +164,13 @@ function signedMessage(params: URLSearchParams): string {
 export async function validateOAuthCallback(
   params: CallbackValidationParams
 ): Promise<Result<ValidatedCallback, AuthenticationError>> {
+  if (params.clientSecret.trim() === '') {
+    return err(
+      new AuthenticationError(
+        'OAuth callback rejected: clientSecret is empty; pass the app client secret (is an environment variable unset?).'
+      )
+    );
+  }
   const query: URLSearchParams = toSearchParams(params.query);
   const hmacValues: string[] = query.getAll('hmac');
   if (hmacValues.length !== 1) {

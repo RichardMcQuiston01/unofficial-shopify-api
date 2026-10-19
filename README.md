@@ -5,11 +5,37 @@
 
 ## Table of Contents
 
-| [Overview](#overview) | [Getting Started](#getting-started) | [Recommended Companions](#recommended-companions) | [Buy Me a Coffee](#buy-me-a-coffee) | [License](#license) | [Copyright](#copyright) |
+| [Overview](#overview) | [Status](#status-and-runtime-support) | [Getting Started](#getting-started) | [Security](#security) | [Recommended Companions](#recommended-companions) | [Buy Me a Coffee](#buy-me-a-coffee) | [License](#license) | [Copyright](#copyright) |
 
 ## Overview
 
 Framework agnostic TypeScript package for Shopify's API. This package will be incorporated into any projects for Shopify plugins.
+
+[Back to Top](#table-of-contents)
+
+## Status and Runtime Support
+
+**Beta.** The API covers the Admin and Storefront GraphQL APIs, OAuth and token
+exchange (including expiring offline tokens and refresh), sessions, webhooks,
+pagination and bulk operations. It is tested with mocked HTTP; the checks that
+need a real shop are listed in [docs/LIVE-TESTING.md](./docs/LIVE-TESTING.md)
+and `npm run live-check`. Expect small API changes before 1.0.
+
+The package has **no runtime dependencies** and uses only web-standard APIs
+(`fetch`, Web Crypto, streams), so it runs where those exist. `npm run
+test:runtimes` runs the same smoke checks against the built package in:
+
+| Runtime                         | Notes                            |
+| ------------------------------- | -------------------------------- |
+| Node.js 22 and 24 (ESM and CJS) | The supported LTS lines          |
+| Bun                             |                                  |
+| Deno                            |                                  |
+| Edge-runtime VM (Vercel Edge)   | No `process`, no `Buffer`        |
+| Cloudflare `workerd` (Workers)  | Without the `nodejs_compat` flag |
+
+Size, minified and gzipped, after tree-shaking: the whole library is about 13 KB;
+importing only `verifyWebhook` costs about 2 KB, and `createAdminClient` about
+4 KB. CI fails if these grow past a budget (`npm run check:bundle`).
 
 [Back to Top](#table-of-contents)
 
@@ -322,6 +348,20 @@ createAdminClient({
 ```
 
 ### Examples
+
+Runnable, type-checked handlers for OAuth, embedded apps, webhooks and bulk
+exports live in [`examples/`](./examples), including Next.js App Router routes.
+
+[Back to Top](#table-of-contents)
+
+## Security
+
+The library compares every signature in constant time, rejects empty secrets,
+never follows redirects with credentials attached, never logs or quotes tokens,
+and sends tokens only to `*.myshopify.com`. A review with its findings and
+the things left to you (encrypting stored tokens, passing the raw webhook body,
+replay handling) is in [docs/SECURITY-REVIEW.md](./docs/SECURITY-REVIEW.md).
+Report vulnerabilities as described in [SECURITY.md](./SECURITY.md).
 
 [Back to Top](#table-of-contents)
 
