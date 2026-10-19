@@ -26,6 +26,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Admin API token saved by scripts/get-shopify-token.ps1
+.shopify-token
+
 # vercel
 .vercel
 

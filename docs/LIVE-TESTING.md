@@ -24,6 +24,12 @@ runs `npm run live-check`. Add `-SkipLiveCheck` to only fetch the token. The
 variables stay set afterwards, so the other commands below work in the same
 window.
 
+The token is also saved to `.shopify-token` in the project root (git-ignored,
+plain text, valid for 24 hours; `-NoSaveToken` skips it). `npm run live-check`
+and `npm run live-bulk-mutation` read it when `SHOPIFY_ADMIN_TOKEN` is not set,
+so a new terminal only needs `SHOPIFY_SHOP` and `SHOPIFY_API_VERSION`. Delete
+the file when you are done.
+
 ## 1. Automated, read-only checks
 
 ```bash
@@ -124,4 +130,4 @@ the library takes from the `key` parameter.
 | Install flow                    |            |                  |             |                                                                                                                                       |
 | Token exchange and refresh      |            |                  |             |                                                                                                                                       |
 | Webhook delivery and replay     |            |                  |             |                                                                                                                                       |
-| Bulk mutation                   |            |                  |             |                                                                                                                                       |
+| Bulk mutation                   | 2026-10-19 | unreleased (dev) | 2026-10     | Pass: staged upload, bulk mutation, tag verified, tag removed.                                                                        |
