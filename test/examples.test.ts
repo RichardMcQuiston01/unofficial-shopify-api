@@ -26,6 +26,7 @@ import {
   runLiveCheck,
   type LiveCheckResult,
 } from '../examples/live-check.js';
+import { createDevApp } from '../examples/dev-server.js';
 import { runLiveBulkMutation } from '../examples/live-bulk-mutation.js';
 import { beginInstall, finishInstall } from '../examples/oauth.js';
 import { exportProductTitles, listProducts } from '../examples/products.js';
@@ -680,5 +681,60 @@ describe('live bulk mutation', () => {
     });
     expect(rejected).toHaveLength(1);
     expect(rejected[0]?.status).toBe('fail');
+  });
+});
+
+describe('dev server routes', () => {
+  const call = (
+    app: (request: Request) => Promise<Response>,
+    path: string,
+    init: RequestInit = {}
+  ): Promise<Response> =>
+    app(new Request(`https://app.example.com${path}`, init));
+
+  it('installs a shop end to end and subscribes it to the webhooks', async () => {
+    const { context, fake } = setup();
+    const app: (request: Request) => Promise<Response> = createDevApp(context);
+
+    const install: Response = await call(app, `/api/auth/install?shop=${shop}`);
+    expect(install.status).toBe(302);
+    const state: string =
+      /shopify_oauth_state=([^;]+)/.exec(
+        install.headers.get('set-cookie') ?? ''
+      )?.[1] ?? '';
+    expect(state).not.toBe('');
+
+    const query: string = signedCallback({
+      code: 'auth-code',
+      shop,
+      state,
+      timestamp: String(Math.floor(Date.now() / 1000)),
+    });
+    const callback: Response = await call(app, `/api/auth/callback?${query}`, {
+      headers: { cookie: `shopify_oauth_state=${state}` },
+    });
+    expect(callback.status).toBe(302);
+    expect(fake.webhookSubscriptions.map((hook) => hook['topic'])).toEqual([
+      'APP_UNINSTALLED',
+      'PRODUCTS_UPDATE',
+    ]);
+
+    const home: Response = await call(app, `/?shop=${shop}`);
+    const body: string = await home.text();
+    expect(body).toContain(`Installed on ${shop}`);
+    expect(body).not.toContain('shpat_');
+  });
+
+  it('answers sensibly to bad requests', async () => {
+    const { context } = setup();
+    const app: (request: Request) => Promise<Response> = createDevApp(context);
+    expect((await call(app, '/')).status).toBe(200);
+    expect((await call(app, '/?shop=nobody')).status).toBe(404);
+    expect((await call(app, '/?shop=evil.example.com')).status).toBe(400);
+    expect((await call(app, '/api/auth/install')).status).toBe(400);
+    expect((await call(app, '/api/nothing')).status).toBe(404);
+    expect(
+      (await call(app, '/api/webhooks', { method: 'POST', body: '{}' })).status
+    ).toBe(401);
   });
 });

@@ -55,16 +55,41 @@ where the channel is available.
 
 ## 2. Install flow (OAuth callback and token endpoint)
 
-Needs a browser and a public HTTPS URL for your app (a tunnel such as
-`cloudflared` or `ngrok` works).
+Needs a browser and a public HTTPS URL for your app. `npm run dev-server`
+mounts the example handlers on `http://localhost:3000`, and a tunnel makes it
+public.
 
-1. Create an app in the Shopify Dev Dashboard. Set the redirect URL to
-   `https://<your-url>/api/auth/callback` and note the client ID and secret.
-2. Run the example routes (`examples/oauth.ts`, or `examples/next-app-router/`)
-   with the environment variables listed in `examples/README.md`.
-3. Open `https://<your-url>/api/auth/install?shop=<your-dev-store>` and approve.
-4. **Expect** a redirect to your app, and a stored offline session with an
-   access token, `expiresAt`, and a refresh token.
+1. Start the tunnel and note its address. With Cloudflare's quick tunnel (no
+   account):
+
+   ```powershell
+   cloudflared tunnel --url http://localhost:3000
+   ```
+
+   It prints `https://<words>.trycloudflare.com`. The address changes each time
+   the tunnel restarts.
+
+2. In the Dev Dashboard, add `https://<tunnel-host>/api/auth/callback` to the
+   app's redirect URLs (and set the App URL to `https://<tunnel-host>`), then
+   release the app version so the change takes effect.
+3. In a second terminal, set the app's settings and start the server:
+
+   ```powershell
+   $env:SHOPIFY_CLIENT_ID = "..."
+   $env:SHOPIFY_CLIENT_SECRET = "..."
+   $env:SHOPIFY_SCOPES = "read_products,write_products"
+   $env:APP_URL = "https://<tunnel-host>"
+   $env:SHOPIFY_API_VERSION = "2026-10"
+   npm run dev-server
+   ```
+
+4. In a browser open `https://<tunnel-host>/api/auth/install?shop=<your-dev-store>`
+   and approve.
+5. **Expect** a redirect to `https://<tunnel-host>/?shop=<your-dev-store>`, a
+   page saying the app is installed (it never shows the token), and these lines
+   in the server log: `GET /api/auth/callback -> 302` and `Webhooks for
+<shop>: 2 created, 0 unchanged.` The session lives in memory, so it is lost
+   when the server stops.
 
 If the callback is rejected with `the "hmac" signature does not match`, the
 signed string differs from what Shopify signed. Open an issue with the raw
@@ -81,7 +106,9 @@ hour), **expect** a refresh, and a new refresh token in storage.
 
 ## 4. Webhooks
 
-1. Subscribe: `syncWebhookSubscriptions(client, [{ topic: 'products/update', uri }])`
+1. Subscribe: the install in step 2 already does this through the dev server
+   (`app/uninstalled` and `products/update` to `<tunnel>/api/webhooks`). To do
+   it yourself: `syncWebhookSubscriptions(client, [{ topic: 'products/update', uri }])`
    with `uri` pointing at your public `/api/webhooks`.
 2. Trigger a delivery: edit a product in the admin, or use the Shopify CLI's
    webhook trigger.
