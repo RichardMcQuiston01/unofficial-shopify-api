@@ -114,12 +114,17 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ### M2: Auth and Sessions (v0.2.0, ~2 weeks)
 
-- [ ] OAuth authorization-code flow (build URL, validate callback HMAC/state,
+- [x] OAuth authorization-code flow (build URL, validate callback HMAC/state,
       exchange code).
-- [ ] Token exchange flow for embedded apps; session-token JWT validation.
-- [ ] `SessionStorage` interface + in-memory implementation.
-- [ ] Prisma adapter (`/prisma` subpath export) with schema and tests.
-- **Exit**: end-to-end install flow demonstrated in an example Next.js app.
+- [x] Token exchange flow for embedded apps; session-token JWT validation.
+- [x] `SessionStorage` interface + in-memory implementation.
+- [x] `createKeyValueSessionStorage` bridge for `storage-adapters` (structural,
+      no dependency); Prisma adapter deferred, since `storage-adapters` already
+      covers Postgres, MySQL, SQLite and Redis.
+- [x] Expiring offline tokens and refresh (`refreshSession`): public apps need
+      them for the GraphQL Admin API from 2027-01-01.
+- **Exit**: unit-tested flows (done); end-to-end install against a dev store and
+  an example Next.js app still to do.
 
 ### M3: Webhooks (v0.3.0, ~1 week)
 

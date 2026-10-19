@@ -7,7 +7,8 @@ export type ShopifyErrorCode =
   | 'THROTTLED'
   | 'GRAPHQL'
   | 'USER_ERROR'
-  | 'WEBHOOK_VERIFICATION';
+  | 'WEBHOOK_VERIFICATION'
+  | 'STORAGE';
 
 /** Details that make an error traceable back to a specific request. */
 export interface ShopifyErrorContext {
@@ -135,5 +136,12 @@ export class UserError extends ShopifyError {
 export class WebhookVerificationError extends ShopifyError {
   constructor(message: string, options: ShopifyErrorOptions = {}) {
     super('WEBHOOK_VERIFICATION', message, options);
+  }
+}
+
+/** A session store could not read, write or decode a session. */
+export class StorageError extends ShopifyError {
+  constructor(message: string, options: ShopifyErrorOptions = {}) {
+    super('STORAGE', message, options);
   }
 }

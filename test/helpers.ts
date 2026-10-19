@@ -42,3 +42,15 @@ export function makeClient(
   if (!created.ok) throw created.error;
   return { client: created.value, fetchMock, sleeps };
 }
+
+/** Returns a copy of `value` without `key`. */
+export function omit<T extends object, K extends keyof T>(
+  value: T,
+  key: K
+): Omit<T, K> {
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      ([name]: [string, unknown]): boolean => name !== key
+    )
+  ) as Omit<T, K>;
+}
