@@ -1,0 +1,60 @@
+name: Shopify API version
+
+# Shopify ships a stable API version on the 1st of January, April, July and
+# October. This opens a PR against `dev` when `api-versions.json` falls behind.
+# Scheduled workflows only run from the default branch, so this starts working
+# once it reaches it. The repository setting "Allow GitHub Actions to create and
+# approve pull requests" must be enabled.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Check for a new API version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Regenerate api-versions.json
+        run: npx tsx tools/api-versions.ts write
+      - name: Open a pull request when it changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet -- api-versions.json; then
+            echo "api-versions.json is current."
+            exit 0
+          fi
+          latest="$(node -p "require('./api-versions.json').latest")"
+          branch="chore/api-version-${latest}"
+          if git ls-remote --exit-code --heads origin "${branch}" >/dev/null; then
+            echo "${branch} already exists; leaving the open PR alone."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${branch}"
+          git add api-versions.json
+          git commit -m "chore: track Shopify API ${latest}" \
+            -m "Shopify released ${latest}. The supported window moves forward so the docs and checks match the versions Shopify still serves."
+          git push -u origin "${branch}"
+          gh pr create --base dev --head "${branch}" --draft \
+            --title "chore: track Shopify API ${latest}" \
+            --body "Shopify released **${latest}**. Before merging:
+
+          - [ ] Run \`npm run live-check\` with \`SHOPIFY_API_VERSION=${latest}\` (see docs/LIVE-TESTING.md).
+          - [ ] Read the ${latest} release notes for removed fields that the bulk, webhook or user-error queries use.
+          - [ ] Update examples or the README if they pin an older version."
