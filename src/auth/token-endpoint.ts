@@ -9,6 +9,7 @@ import {
 } from '../errors/errors.js';
 import { snippet } from '../internal/text.js';
 import { parseRetryAfterMs } from '../client/retry.js';
+import { redirectTarget } from '../client/graphql-client.js';
 import { normalizeShopDomain } from '../client/shop.js';
 import { err, ok, type Result } from '../result/result.js';
 
@@ -121,6 +122,8 @@ export async function requestAccessToken(
         },
         body: new URLSearchParams(parameters).toString(),
         signal,
+        // Never follow a redirect: the body holds the client secret.
+        redirect: 'manual',
       }
     );
   } catch (thrown: unknown) {
@@ -167,6 +170,13 @@ function tokenEndpointFailure(
   const shop: string = context.shop ?? 'the shop';
   const status: number = response.status;
   const detail: string = text === '' ? '' : `: "${snippet(text)}"`;
+  if (status >= 300 && status < 400) {
+    return new HttpError(
+      `${operation} on ${shop}: Shopify answered with a redirect (HTTP ${String(status)}) to ${redirectTarget(response)}. ` +
+        'Redirects are not followed, so the client secret never reaches another host; the shop may have been renamed or moved.',
+      { context }
+    );
+  }
   if (status === 400) {
     return new AuthenticationError(
       `${operation} on ${shop}: Shopify rejected the grant (HTTP 400)${detail}. ` +

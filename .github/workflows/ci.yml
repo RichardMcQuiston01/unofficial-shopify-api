@@ -25,3 +25,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+
+  runtimes:
+    name: Runtimes (Node, Bun, Deno, edge VM, workerd)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # Installed for this job only, so contributors do not download them.
+      - run: npm install --no-save bun deno @edge-runtime/vm workerd
+      - run: node scripts/run-matrix.mjs --strict

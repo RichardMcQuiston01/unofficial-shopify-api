@@ -40,10 +40,15 @@ export async function verifyHmac(
   message: string | Uint8Array,
   signature: Uint8Array
 ): Promise<boolean> {
-  const key: CryptoKey = await importHmacKey(secret);
-  const data: Uint8Array<ArrayBuffer> =
-    typeof message === 'string' ? encoder.encode(message) : toBuffer(message);
-  return crypto.subtle.verify('HMAC', key, toBuffer(signature), data);
+  try {
+    const key: CryptoKey = await importHmacKey(secret);
+    const data: Uint8Array<ArrayBuffer> =
+      typeof message === 'string' ? encoder.encode(message) : toBuffer(message);
+    return await crypto.subtle.verify('HMAC', key, toBuffer(signature), data);
+  } catch {
+    // An unusable key (such as an empty secret) can never validate anything.
+    return false;
+  }
 }
 
 /**

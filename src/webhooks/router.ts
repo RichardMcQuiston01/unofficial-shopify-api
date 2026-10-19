@@ -34,6 +34,8 @@ export type WebhookHandler<TPayload = unknown> = (
 
 export interface HandleWebhookOptions {
   readonly clientSecret: string;
+  /** See `VerifyWebhookOptions.maxAgeSeconds`. */
+  readonly maxAgeSeconds?: number;
   /** Skips deliveries whose `X-Shopify-Webhook-Id` was already handled. */
   readonly deliveryLog?: DeliveryLog;
   readonly logger?: Logger;
@@ -89,7 +91,11 @@ export function createWebhookRouter<
     ): Promise<Result<WebhookOutcome>> {
       const logger: Logger = options.logger ?? noopLogger;
       const verified: Result<WebhookEvent, WebhookVerificationError> =
-        await verifyWebhook(request, options.clientSecret);
+        await verifyWebhook(request, options.clientSecret, {
+          ...(options.maxAgeSeconds === undefined
+            ? {}
+            : { maxAgeSeconds: options.maxAgeSeconds }),
+        });
       if (!verified.ok) {
         logger.warn('Webhook rejected', { reason: verified.error.message });
         return verified;

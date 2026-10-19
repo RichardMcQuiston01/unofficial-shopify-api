@@ -37,6 +37,18 @@ export interface VerifiedWebhook<TPayload = unknown> {
   readonly payload: TPayload;
 }
 
+export interface VerifyWebhookOptions {
+  /**
+   * Reject deliveries triggered more than this many seconds ago (by
+   * `X-Shopify-Triggered-At`), which limits replays of a captured request.
+   * Off by default: Shopify retries failed deliveries for up to 48 hours, so
+   * use a generous value or rely on a delivery log instead.
+   */
+  readonly maxAgeSeconds?: number;
+  /** Clock in epoch milliseconds (for tests). */
+  readonly now?: () => number;
+}
+
 const hmacHeader: string = 'x-shopify-hmac-sha256';
 
 /** Case-insensitive single-value header lookup; repeated headers count as absent. */
@@ -61,8 +73,14 @@ function reject(reason: string): Result<never, WebhookVerificationError> {
  */
 export async function verifyWebhook<TPayload = unknown>(
   request: WebhookRequest,
-  clientSecret: string
+  clientSecret: string,
+  options: VerifyWebhookOptions = {}
 ): Promise<Result<VerifiedWebhook<TPayload>, WebhookVerificationError>> {
+  if (clientSecret.trim() === '') {
+    return reject(
+      'clientSecret is empty; pass the app client secret (is an environment variable unset?)'
+    );
+  }
   const signatureHeader: string | undefined = readHeader(
     request.headers,
     hmacHeader
@@ -111,6 +129,24 @@ export async function verifyWebhook<TPayload = unknown>(
     );
   }
 
+  const triggeredAt: string | undefined = readHeader(
+    request.headers,
+    'x-shopify-triggered-at'
+  );
+  if (options.maxAgeSeconds !== undefined) {
+    const triggeredMs: number = Date.parse(triggeredAt ?? '');
+    const ageSeconds: number =
+      ((options.now ?? Date.now)() - triggeredMs) / 1000;
+    if (
+      Number.isNaN(triggeredMs) ||
+      Math.abs(ageSeconds) > options.maxAgeSeconds
+    ) {
+      return reject(
+        `the signature is valid but X-Shopify-Triggered-At is missing or more than ${String(options.maxAgeSeconds)} seconds from now`
+      );
+    }
+  }
+
   const rawBody: string =
     typeof request.rawBody === 'string'
       ? request.rawBody
@@ -129,7 +165,7 @@ export async function verifyWebhook<TPayload = unknown>(
     webhookId,
     eventId: readHeader(request.headers, 'x-shopify-event-id'),
     apiVersion: readHeader(request.headers, 'x-shopify-api-version'),
-    triggeredAt: readHeader(request.headers, 'x-shopify-triggered-at'),
+    triggeredAt,
     subscriptionName: readHeader(request.headers, 'x-shopify-name'),
     rawBody,
     payload,

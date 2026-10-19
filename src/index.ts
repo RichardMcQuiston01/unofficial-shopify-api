@@ -17,6 +17,7 @@ export {
   type GraphqlClientConfig,
 } from './client/graphql-client.js';
 export * from './client/storefront-client.js';
+export { normalizeShopDomain, validateApiVersion } from './client/shop.js';
 export { checkUserErrors, type WithUserErrors } from './client/user-errors.js';
 export type {
   AdminClientOptions,
