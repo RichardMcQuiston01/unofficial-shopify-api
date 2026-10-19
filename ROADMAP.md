@@ -166,12 +166,13 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ## 6. Decisions
 
-| Question         | Decision                                                                                                  |
-| ---------------- | --------------------------------------------------------------------------------------------------------- |
-| Package layout   | Single package; Prisma adapter is a subpath export with an optional peer dependency                       |
-| Release tooling  | Changesets                                                                                                |
-| Node support     | Node LTS lines only                                                                                       |
-| Target app types | Both public and custom apps; published publicly on NPM and also consumed by the author's own Shopify apps |
+| Question         | Decision                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Package layout   | Single package; Prisma adapter is a subpath export with an optional peer dependency                                                  |
+| Release tooling  | Changesets                                                                                                                           |
+| Node support     | Node LTS lines only                                                                                                                  |
+| Companion libs   | `storage-adapters` and `error-log-adapter` are recommended in the README, not bundled or depended on; the core stays zero-dependency |
+| Target app types | Both public and custom apps; published publicly on NPM and also consumed by the author's own Shopify apps                            |
 
 Implications of supporting both app types: auth covers OAuth/token exchange
 (public apps) and static Admin API access tokens (custom apps); the public
