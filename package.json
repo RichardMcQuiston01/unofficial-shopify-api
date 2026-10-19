@@ -1,6 +1,6 @@
 {
   "name": "@richardmcquiston01/unofficial-shopify-api",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Framework-agnostic, fully typed TypeScript client for Shopify's APIs.",
   "license": "Apache-2.0",
   "author": "Richard McQuiston <richard.mcquiston@gmail.com> (https://richardmcquiston.com/)",
