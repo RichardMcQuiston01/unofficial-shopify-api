@@ -8,6 +8,22 @@ the library in production, and again after upgrading it.
 Use a **development store**, never a merchant's shop. Everything below is
 read-only except where noted.
 
+## 0. Getting an Admin token (Dev Dashboard apps)
+
+For an app in your own organization, install it on the development store with
+the scopes you need released on the app version, then trade its client ID and
+secret for a 24-hour token (the client credentials grant). On Windows:
+
+```powershell
+.\scripts\get-shopify-token.ps1 -Shop your-dev-store -ClientId <client id>
+```
+
+It asks for the secret without echoing it, sets `SHOPIFY_SHOP`,
+`SHOPIFY_API_VERSION` and `SHOPIFY_ADMIN_TOKEN` for that PowerShell session, and
+runs `npm run live-check`. Add `-SkipLiveCheck` to only fetch the token. The
+variables stay set afterwards, so the other commands below work in the same
+window.
+
 ## 1. Automated, read-only checks
 
 ```bash
@@ -77,29 +93,35 @@ hour), **expect** a refresh, and a new refresh token in storage.
 
 ## 5. Bulk mutation (writes data)
 
-Use a dev store. The mutation below adds a tag to products you choose, so it is
-easy to undo.
+Use a dev store and a token with `write_products`. The check tags one product
+through a bulk mutation, confirms the tag, then removes it. It refuses to run
+until you opt in:
 
-```ts
-const result = await runBulkMutation(
-  client,
-  `mutation TagProduct($tags: [String!]!, $id: ID!) {
-     tagsAdd(id: $id, tags: $tags) { userErrors { field message } }
-   }`,
-  [{ id: 'gid://shopify/Product/123', tags: ['bulk-test'] }]
-);
+```bash
+LIVE_ALLOW_WRITES=yes npm run live-bulk-mutation
 ```
 
-**Expect** `COMPLETED`, a result URL, and the tag in the admin. This exercises
-the staged upload, the multipart POST and the `stagedUploadPath` that the
-library takes from the `key` parameter.
+```powershell
+$env:LIVE_ALLOW_WRITES = "yes"
+npm run live-bulk-mutation
+```
+
+Optional: `LIVE_PRODUCT_ID`, `LIVE_TAG` (default `bulk-test`), and
+`LIVE_KEEP_TAG=yes` to leave the tag in place. It stops before writing if the
+product already has the tag, so cleanup never removes a tag that was there
+before.
+
+**Expect** four `PASS` lines: choose a product, bulk mutation (a completed
+operation and one result row with no user errors), verify, and cleanup. This
+exercises the staged upload, the multipart POST and the `stagedUploadPath` that
+the library takes from the `key` parameter.
 
 ## Record
 
-| Check                           | Date | Library version | API version | Result |
-| ------------------------------- | ---- | --------------- | ----------- | ------ |
-| Automated checks (`live-check`) |      |                 |             |        |
-| Install flow                    |      |                 |             |        |
-| Token exchange and refresh      |      |                 |             |        |
-| Webhook delivery and replay     |      |                 |             |        |
-| Bulk mutation                   |      |                 |             |        |
+| Check                           | Date       | Library version  | API version | Result                                                                                                                                |
+| ------------------------------- | ---------- | ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Automated checks (`live-check`) | 2026-10-19 | unreleased (dev) | 2026-10     | Pass for the shop query, pagination, webhook listing and bulk query. Storefront failed: Online Store channel locked on the dev store. |
+| Install flow                    |            |                  |             |                                                                                                                                       |
+| Token exchange and refresh      |            |                  |             |                                                                                                                                       |
+| Webhook delivery and replay     |            |                  |             |                                                                                                                                       |
+| Bulk mutation                   |            |                  |             |                                                                                                                                       |

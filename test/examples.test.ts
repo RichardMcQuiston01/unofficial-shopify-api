@@ -26,6 +26,7 @@ import {
   runLiveCheck,
   type LiveCheckResult,
 } from '../examples/live-check.js';
+import { runLiveBulkMutation } from '../examples/live-bulk-mutation.js';
 import { beginInstall, finishInstall } from '../examples/oauth.js';
 import { exportProductTitles, listProducts } from '../examples/products.js';
 import {
@@ -590,5 +591,94 @@ describe('live check', () => {
           result.name === 'storefront client' && result.status === 'fail'
       )
     ).toBe(true);
+  });
+});
+
+describe('live bulk mutation', () => {
+  const env: Record<string, string> = {
+    SHOPIFY_SHOP: 'example',
+    SHOPIFY_API_VERSION: '2026-10',
+    SHOPIFY_ADMIN_TOKEN: 'shpat_x',
+    LIVE_ALLOW_WRITES: 'yes',
+  };
+  const names = (results: LiveCheckResult[]): string[][] =>
+    results.map((result) => [result.name, result.status]);
+
+  it('tags a product through a bulk mutation, verifies it, and cleans up', async () => {
+    const fake: FakeShopify = fakeShopify({ productTags: ['existing'] });
+    const results: LiveCheckResult[] = await runLiveBulkMutation(env, {
+      fetch: fake.fetch,
+    });
+    expect(names(results)).toEqual([
+      ['choose a product', 'pass'],
+      ['bulk mutation: tagsAdd "bulk-test"', 'pass'],
+      ['verify: the tag is on the product', 'pass'],
+      ['cleanup: remove the tag', 'pass'],
+    ]);
+    expect(fake.uploads).toEqual([
+      JSON.stringify({ id: 'gid://shopify/Product/1', tags: ['bulk-test'] }),
+    ]);
+    expect(fake.productTags).toEqual(['existing']);
+    expect(printLiveCheck(results)).toBe(0);
+  });
+
+  it('can keep the tag and use a chosen product and tag', async () => {
+    const fake: FakeShopify = fakeShopify();
+    const results: LiveCheckResult[] = await runLiveBulkMutation(
+      { ...env, LIVE_KEEP_TAG: 'yes', LIVE_TAG: 'custom' },
+      { fetch: fake.fetch }
+    );
+    expect(results.at(-1)).toMatchObject({ name: 'cleanup', status: 'skip' });
+    expect(fake.productTags).toEqual(['custom']);
+    const chosen: LiveCheckResult[] = await runLiveBulkMutation(
+      { ...env, LIVE_PRODUCT_ID: 'gid://shopify/Product/1', LIVE_TAG: 'other' },
+      { fetch: fakeShopify().fetch }
+    );
+    expect(chosen[0]?.status).toBe('pass');
+  });
+
+  it('refuses to write without LIVE_ALLOW_WRITES=yes, and without a token', async () => {
+    const fake: FakeShopify = fakeShopify();
+    const refused: LiveCheckResult[] = await runLiveBulkMutation(
+      { ...env, LIVE_ALLOW_WRITES: 'true' },
+      { fetch: fake.fetch }
+    );
+    expect(refused).toHaveLength(1);
+    expect(refused[0]?.detail).toContain('LIVE_ALLOW_WRITES=yes');
+    expect(fake.calls).toHaveLength(0);
+    const unconfigured: LiveCheckResult[] = await runLiveBulkMutation({});
+    expect(unconfigured[0]?.name).toBe('configuration');
+    const badVersion: LiveCheckResult[] = await runLiveBulkMutation(
+      { ...env, SHOPIFY_API_VERSION: 'latest' },
+      { fetch: fake.fetch }
+    );
+    expect(badVersion[0]?.name).toBe('admin client');
+  });
+
+  it('stops before writing when the product already has the tag', async () => {
+    const fake: FakeShopify = fakeShopify({ productTags: ['bulk-test'] });
+    const results: LiveCheckResult[] = await runLiveBulkMutation(env, {
+      fetch: fake.fetch,
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]?.status).toBe('fail');
+    expect(results[0]?.detail).toContain('already has the tag');
+    expect(fake.uploads).toHaveLength(0);
+  });
+
+  it('fails when the tag does not arrive, and when Shopify rejects the token', async () => {
+    const unapplied: FakeShopify = fakeShopify({ ignoreBulkMutation: true });
+    const results: LiveCheckResult[] = await runLiveBulkMutation(env, {
+      fetch: unapplied.fetch,
+    });
+    expect(
+      results.find((result) => result.name.startsWith('verify'))
+    ).toMatchObject({ status: 'fail' });
+    const rejecting: FakeShopify = fakeShopify({ rejectAdmin: true });
+    const rejected: LiveCheckResult[] = await runLiveBulkMutation(env, {
+      fetch: rejecting.fetch,
+    });
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]?.status).toBe('fail');
   });
 });
