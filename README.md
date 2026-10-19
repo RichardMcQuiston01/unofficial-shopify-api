@@ -61,6 +61,94 @@ queries only, never for mutations, which may already have run. Mutation
 validation failures arrive as `userErrors` inside a successful response; pass
 the payload to `checkUserErrors` to turn them into an `Err`.
 
+#### Authentication and sessions
+
+Public apps need an access token per shop. Both flows end in a `Session` you
+store and later pass to `createAdminClient`.
+
+**Embedded apps (token exchange).** App Bridge gives the frontend a short-lived
+ID token (formerly "session token"); send it to your backend, validate it, then
+exchange it:
+
+```ts
+import {
+  exchangeIdToken,
+  sessionFromGrant,
+  validateIdToken,
+} from '@richardmcquiston01/unofficial-shopify-api';
+
+const claims = await validateIdToken(idToken, { clientId, clientSecret });
+if (!claims.ok) return respond401(); // App Bridge then fetches a fresh token
+
+const grant = await exchangeIdToken({
+  shop: claims.value.shop,
+  clientId,
+  clientSecret,
+  idToken,
+});
+if (grant.ok) {
+  await sessions.store(sessionFromGrant(claims.value.shop, grant.value));
+}
+```
+
+**Standalone apps (authorization code).** Send the merchant to Shopify, verify the
+callback, then exchange the code:
+
+```ts
+import {
+  buildAuthorizationUrl,
+  exchangeAuthorizationCode,
+  generateState,
+  validateOAuthCallback,
+} from '@richardmcquiston01/unofficial-shopify-api';
+
+const state = generateState(); // save it (cookie or server session)
+const url = buildAuthorizationUrl({
+  shop,
+  clientId,
+  scopes: ['read_products'],
+  redirectUri: 'https://app.example.com/auth/callback',
+  state,
+});
+
+// In the callback route:
+const callback = await validateOAuthCallback({
+  query: request.url.search, // string, URLSearchParams or a parsed object
+  clientSecret,
+  expectedState: savedState,
+});
+if (callback.ok) {
+  const grant = await exchangeAuthorizationCode({
+    shop: callback.value.shop,
+    clientId,
+    clientSecret,
+    code: callback.value.code,
+  });
+}
+```
+
+Public apps must use **expiring offline tokens** for the GraphQL Admin API
+(required from 2027-01-01), so both exchanges request one by default. Such a
+token lasts about an hour and comes with a 90-day refresh token. Check
+`isAccessTokenExpired(session)` before use and call `refreshSession` when it is;
+store the returned session, because every refresh issues a new refresh token.
+Online tokens (`tokenType: 'online'`, or `perUser: true` for the code flow)
+belong to one staff member, have no refresh token, and get a new ID-token
+exchange instead.
+
+**Storing sessions.** `SessionStorage` has four methods: `load`, `store`,
+`delete` and `deleteByShop` (call it on app uninstall). `createMemorySessionStorage()`
+is for tests. For anything durable, wrap a
+[`storage-adapters`](https://github.com/RichardMcQuiston01/storage-adapters)
+store (Postgres, MySQL, SQLite, Redis, ...) with `createKeyValueSessionStorage`:
+
+```ts
+const sessions = createKeyValueSessionStorage(myStorageAdapter);
+```
+
+Sessions hold access and refresh tokens. Encrypt them at rest (for example with
+`withEncoding` from `storage-adapters`) and never log them.
+
 ### Examples
 
 [Back to Top](#table-of-contents)

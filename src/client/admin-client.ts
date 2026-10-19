@@ -10,6 +10,7 @@ import {
   type ShopifyErrorContext,
 } from '../errors/errors.js';
 import { noopLogger, type Logger } from '../logger/logger.js';
+import { snippet } from '../internal/text.js';
 import { err, ok, type Result } from '../result/result.js';
 import { backoffDelayMs, defaultSleep, parseRetryAfterMs } from './retry.js';
 import { normalizeShopDomain, validateApiVersion } from './shop.js';
@@ -47,7 +48,6 @@ const defaultMaxRetries: number = 3;
 const defaultRetryBaseDelayMs: number = 500;
 const defaultMaxRetryDelayMs: number = 10_000;
 const defaultTimeoutMs: number = 30_000;
-const bodySnippetLength: number = 200;
 
 /**
  * Creates an Admin GraphQL client. Returns an `Err` for invalid configuration
@@ -409,11 +409,4 @@ function stripNoise(query: string): string {
   return query
     .replace(/"""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"/g, '""')
     .replace(/#[^\n]*/g, '');
-}
-
-function snippet(text: string): string {
-  const collapsed: string = text.replace(/\s+/g, ' ').trim();
-  return collapsed.length > bodySnippetLength
-    ? `${collapsed.slice(0, bodySnippetLength)}…`
-    : collapsed;
 }
