@@ -1,4 +1,4 @@
-# Project Title
+# @richardmcquiston01/unofficial-shopify-api
 
 - Author: [Richard McQuiston](mailto:richard.mcquiston@gmail.com)
 - Website: https://richardmcquiston.com/
@@ -8,6 +8,8 @@
 | [Overview](#overview) | [Getting Started](#getting-started) | [Buy Me a Coffee](#buy-me-a-coffee) | [License](#license) | [Copyright](#copyright) |
 
 ## Overview
+
+Framework agnostic TypeScript package for Shopify's API.  This package will be incorporated into any projects for Shopify plugins.  
 
 [Back to Top](#table-of-contents)
 
