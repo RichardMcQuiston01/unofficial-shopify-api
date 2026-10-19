@@ -101,14 +101,22 @@ If the callback is rejected with `the "hmac" signature does not match`, the
 signed string differs from what Shopify signed. Open an issue with the raw
 query string (blank out `code` and `hmac`) and the client ID.
 
-## 3. Embedded app: ID token and token exchange
+## 3. Token refresh, and the embedded app's token exchange
 
-Run the app inside the admin (the Shopify CLI's `shopify app dev` does this).
-Call a route that uses `authenticateAdmin` from `examples/embedded.ts`.
+**Refresh (no embedded app needed).** After the install in step 2, with the dev
+server still running, open `http://127.0.0.1:3001/refresh` (a separate port on
+loopback that the tunnel never reaches; set `DEV_CONTROL_PORT` to change it). It
+refreshes the stored offline token with its refresh token, stores the new pair,
+and calls the Admin API with the new access token. **Expect** `PASS`, with
+"access token changed: yes", "refresh token rotated: yes" and "new access token
+works: yes". It never prints a token. Add `?shop=<store>` if you installed more
+than one.
 
-**Expect** the first call to exchange the ID token for a token and store a
-session, and later calls to reuse it. After the access token expires (about an
-hour), **expect** a refresh, and a new refresh token in storage.
+**Embedded token exchange.** Run the app inside the admin (the Shopify CLI's
+`shopify app dev` does this) and call a route that uses `authenticateAdmin` from
+`examples/embedded.ts`. **Expect** the first call to exchange the ID token for a
+token and store a session, and later calls to reuse it. The dev server does not
+cover this, because the test app has to be embedded.
 
 ## 4. Webhooks
 
@@ -117,12 +125,18 @@ hour), **expect** a refresh, and a new refresh token in storage.
    it yourself: `syncWebhookSubscriptions(client, [{ topic: 'products/update', uri }])`
    with `uri` pointing at your public `/api/webhooks`.
 2. Trigger a delivery: edit a product in the admin, or use the Shopify CLI's
-   webhook trigger.
-3. **Expect** `200` from your route and your handler to run once. Re-send the
-   same delivery (replay it from Shopify's delivery log, or `curl` the captured
-   request): **expect** `200` and no second handler run.
-4. Send the captured request with one character of the body changed:
-   **expect** `401`.
+   webhook trigger. **Expect** `POST /api/webhooks -> 200` and a log line for the
+   handler in the server window.
+3. Replay: open `http://127.0.0.1:3001/replay`. It sends the last verified
+   delivery through the handler again. **Expect** `PASS`: HTTP 200 and outcome
+   `"duplicate"`, and no second handler line in the server log.
+4. Tamper: open `http://127.0.0.1:3001/tamper`. It sends the same delivery with
+   one extra character in the body. **Expect** `PASS`: HTTP 401, because the
+   signature covers the exact bytes.
+
+Only deliveries that pass verification are remembered, so a stranger's POST to
+the public URL cannot replace the one `/replay` and `/tamper` use. The captured
+body lives in memory only and is lost when the server stops.
 
 ## 5. Bulk mutation (writes data)
 

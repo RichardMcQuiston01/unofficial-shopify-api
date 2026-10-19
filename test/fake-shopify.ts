@@ -205,6 +205,8 @@ export function fakeShopify(options: FakeShopifyOptions = {}): FakeShopify {
             userErrors: [],
           },
         });
+      case 'DevRefreshShop':
+        return reply({ shop: { name: 'Fake Shop' } });
       case 'LiveBulkProduct':
         return reply({
           products: {
