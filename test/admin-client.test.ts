@@ -79,6 +79,49 @@ describe('request: success', () => {
     });
   });
 
+  it.each([
+    ['an anonymous query', '{ shop { name } }', 'Shop', undefined],
+    [
+      'a differently named query',
+      'query Other { shop { name } }',
+      'Shop',
+      undefined,
+    ],
+    [
+      'a longer name that only starts the same',
+      'query ShopInfo { shop { name } }',
+      'Shop',
+      undefined,
+    ],
+    ['a matching mutation', productMutation, 'Create', 'Create'],
+    [
+      'a name inside a comment only',
+      '# query Shop\n{ shop { name } }',
+      'Shop',
+      undefined,
+    ],
+  ])(
+    'sends operationName for %s only when the document declares it',
+    async (
+      unused: string,
+      query: string,
+      operationName: string,
+      sent: string | undefined
+    ) => {
+      const { client, fetchMock }: TestClient = makeClient();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: {} }));
+
+      await client.request(query, { operationName });
+
+      const [, init]: Parameters<typeof fetch> = fetchMock.mock
+        .calls[0] as Parameters<typeof fetch>;
+      const body: { operationName?: string } = JSON.parse(
+        init?.body as string
+      ) as { operationName?: string };
+      expect(body.operationName).toBe(sent);
+    }
+  );
+
   it('accepts a typed document object', async () => {
     const { client, fetchMock }: TestClient = makeClient();
     fetchMock.mockResolvedValueOnce(

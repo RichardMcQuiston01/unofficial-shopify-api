@@ -23,7 +23,19 @@ subscriptions, a bulk query with streamed results, and a Storefront query
 (tokenless unless you give a token). Each step prints `PASS`, `FAIL` or `SKIP`
 with the request ID of any failure, which is what Shopify support asks for.
 The default bulk query reads product IDs and titles; set `LIVE_BULK_QUERY` for
-something else. It needs the `read_products` scope.
+something else. It needs `read_products` (or `write_products`, which includes
+it).
+
+The Storefront check needs the store's Online Store channel to be unlocked. On
+a locked development store Shopify answers `400 "Online Store channel is
+locked"`; that is the store, not the library, so skip the check or use a store
+where the channel is available.
+
+### Findings so far
+
+- First live run (2026-10): the Admin shop query failed with `No operation named
+"LiveShop"` because the client sent an `operationName` the query did not
+  declare. Fixed: the name is now sent only when the document declares it.
 
 ## 2. Install flow (OAuth callback and token endpoint)
 

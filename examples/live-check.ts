@@ -133,9 +133,10 @@ export async function runLiveCheck(
 
       await step(results, 'admin: shop query', async () => {
         const response: AdminResponse<ShopData> = unwrap(
-          await client.request<ShopData>('{ shop { name myshopifyDomain } }', {
-            operationName: 'LiveShop',
-          })
+          await client.request<ShopData>(
+            'query LiveShop { shop { name myshopifyDomain } }',
+            { operationName: 'LiveShop' }
+          )
         );
         return `${response.data.shop.name} (${response.data.shop.myshopifyDomain}), request ${response.requestId ?? 'n/a'}`;
       });
@@ -226,7 +227,7 @@ export async function runLiveCheck(
     await step(results, `storefront: products query (${flavor})`, async () => {
       const response: AdminResponse<StorefrontData> = unwrap(
         await storefront.value.request<StorefrontData>(
-          '{ products(first: 1) { nodes { id } } }',
+          'query LiveStorefront { products(first: 1) { nodes { id } } }',
           { operationName: 'LiveStorefront' }
         )
       );
