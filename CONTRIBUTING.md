@@ -16,6 +16,9 @@ npm run verify   # format, lint, typecheck, tests + coverage, build, package che
 - Use [Conventional Commits](https://www.conventionalcommits.org/)
   (`type(scope): summary`, 50 characters or fewer).
 - For any user-facing change run `npm run changeset` and commit the file.
+- Adding, removing or renaming a public export means updating
+  `test/public-api.test.ts`; see [docs/VERSIONING.md](docs/VERSIONING.md) for
+  what counts as a breaking change.
 
 ## Code style
 

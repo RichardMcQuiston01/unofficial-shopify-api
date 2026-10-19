@@ -19,7 +19,7 @@ Framework agnostic TypeScript package for Shopify's API. This package will be in
 exchange (including expiring offline tokens and refresh), sessions, webhooks,
 pagination and bulk operations. It is tested with mocked HTTP; the checks that
 need a real shop are listed in [docs/LIVE-TESTING.md](./docs/LIVE-TESTING.md)
-and `npm run live-check`. Expect small API changes before 1.0.
+and `npm run live-check`. Expect small API changes before 1.0. See [docs/VERSIONING.md](docs/VERSIONING.md) for the semver, deprecation and Shopify API version policy.
 
 The package has **no runtime dependencies** and uses only web-standard APIs
 (`fetch`, Web Crypto, streams), so it runs where those exist. `npm run
