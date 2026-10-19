@@ -17,9 +17,49 @@ Framework agnostic TypeScript package for Shopify's API. This package will be in
 
 ### Prerequisites
 
+A current Node LTS (22 or newer), or any runtime with a standard `fetch`.
+
 ### Installation
 
+```bash
+npm install @richardmcquiston01/unofficial-shopify-api
+```
+
 ### Usage
+
+Every fallible call returns a `Result`: check `ok` before using the value.
+
+```ts
+import {
+  checkUserErrors,
+  createAdminClient,
+  type AdminClient,
+} from '@richardmcquiston01/unofficial-shopify-api';
+
+const created = createAdminClient({
+  shop: 'example', // or example.myshopify.com
+  accessToken: process.env.SHOPIFY_ADMIN_TOKEN ?? '',
+  apiVersion: '2026-10',
+});
+if (!created.ok) throw created.error; // descriptive configuration error
+const client: AdminClient = created.value;
+
+interface ShopData {
+  shop: { name: string };
+}
+const result = await client.request<ShopData>('query { shop { name } }');
+if (!result.ok) {
+  console.error(result.error.code, result.error.message, result.error.context);
+} else {
+  console.log(result.value.data.shop.name, result.value.cost);
+}
+```
+
+Throttled requests (HTTP 429 or GraphQL `THROTTLED`) are retried after the
+wait Shopify implies. Network errors and 5xx responses are retried for
+queries only, never for mutations, which may already have run. Mutation
+validation failures arrive as `userErrors` inside a successful response; pass
+the payload to `checkUserErrors` to turn them into an `Err`.
 
 ### Examples
 

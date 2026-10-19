@@ -103,11 +103,13 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ### M1: Core Admin GraphQL Client (v0.1.0, ~2 weeks)
 
-- [ ] `createAdminClient({ shop, accessToken, apiVersion })`.
-- [ ] `request(document, variables)` returning `Result`, typed via codegen.
-- [ ] Error mapping (HTTP, GraphQL `errors`, `userErrors`).
-- [ ] Rate-limit awareness: cost tracking, throttle retry/backoff, `Retry-After`.
-- [ ] Unit + contract tests against recorded fixtures.
+- [x] `createAdminClient({ shop, accessToken, apiVersion })`. `apiVersion` is
+      required (no stale default); the shop must be a `.myshopify.com` host so
+      tokens cannot be sent elsewhere.
+- [x] `request(document, variables)` returning `Result`, typed via codegen.
+- [x] Error mapping (HTTP, GraphQL `errors`, `userErrors`).
+- [x] Rate-limit awareness: cost tracking, throttle retry/backoff, `Retry-After`.
+- [x] Unit + contract tests against recorded fixtures.
 - **Exit**: can query/mutate products and orders against a dev store.
 
 ### M2: Auth and Sessions (v0.2.0, ~2 weeks)
