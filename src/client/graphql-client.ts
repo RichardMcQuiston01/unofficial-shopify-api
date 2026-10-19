@@ -136,7 +136,7 @@ export function createGraphqlClient(
     const body: string = JSON.stringify({
       query,
       variables: requestOptions.variables,
-      operationName: requestOptions.operationName,
+      operationName: declaredOperationName(query, requestOptions.operationName),
     });
 
     for (let attempt: number = 1; ; attempt++) {
@@ -454,6 +454,23 @@ function waitForBudgetMs(cost: QueryCost | undefined): number | undefined {
 }
 
 /** Removes comments and string literals so keyword checks see only syntax. */
+/**
+ * Shopify rejects a request whose `operationName` is not defined in the
+ * document ("No operation named ..."), so the name is only sent when the
+ * document declares it. Otherwise it stays a label for logs and errors.
+ */
+function declaredOperationName(
+  query: string,
+  name: string | undefined
+): string | undefined {
+  if (name === undefined) return undefined;
+  const escaped: string = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const declaration: RegExp = new RegExp(
+    `\\b(?:query|mutation|subscription)\\s+${escaped}(?![_0-9A-Za-z])`
+  );
+  return declaration.test(stripNoise(query)) ? name : undefined;
+}
+
 function stripNoise(query: string): string {
   return query
     .replace(/"""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"/g, '""')

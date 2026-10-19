@@ -114,7 +114,10 @@ export interface GraphqlRequestOptions<
   TVariables extends GraphqlVariables = GraphqlVariables,
 > {
   readonly variables?: TVariables;
-  /** Name sent as `operationName` and used in error messages. */
+  /**
+   * Used in error messages and logs. Also sent as `operationName` when the
+   * document declares an operation of that name; otherwise it is not sent.
+   */
   readonly operationName?: string;
   readonly signal?: AbortSignal;
   /** Overrides the client's `maxRetries` for this call. */
