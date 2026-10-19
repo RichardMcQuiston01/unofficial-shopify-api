@@ -149,6 +149,67 @@ const sessions = createKeyValueSessionStorage(myStorageAdapter);
 Sessions hold access and refresh tokens. Encrypt them at rest (for example with
 `withEncoding` from `storage-adapters`) and never log them.
 
+#### Webhooks
+
+Verify every delivery before trusting it, then dispatch by topic. Pass the
+**raw** request body: the signature covers the exact bytes Shopify sent, so
+re-serialized JSON will not verify.
+
+```ts
+import {
+  createMemoryDeliveryLog,
+  createWebhookRouter,
+  ok,
+  webhookResponseStatus,
+} from '@richardmcquiston01/unofficial-shopify-api';
+
+interface Payloads {
+  'products/update': { id: number; title: string };
+  'app/uninstalled': { domain: string };
+}
+
+const router = createWebhookRouter<Payloads>()
+  .on('products/update', async (event) => {
+    console.log(event.shop, event.payload.title);
+    return ok(undefined);
+  })
+  .on('app/uninstalled', async (event) => {
+    await sessions.deleteByShop(event.shop);
+    return ok(undefined);
+  });
+
+const deliveryLog = createMemoryDeliveryLog(); // use a durable one when scaling out
+
+// In your route handler (Fetch API shown):
+const rawBody = await request.text();
+const result = await router.handle(
+  { rawBody, headers: request.headers },
+  { clientSecret, deliveryLog }
+);
+return new Response(null, { status: webhookResponseStatus(result) });
+```
+
+A bad signature answers 401. A failed or throwing handler answers 500, which
+makes Shopify retry, and the delivery is released so the retry is processed. A
+retry of an already-handled delivery (same `X-Shopify-Webhook-Id`) is skipped.
+Topics with no handler answer 200.
+
+**Subscribing.** `syncWebhookSubscriptions(client, desired)` makes the shop's
+API-created subscriptions match a list (create, update, leave alone), and only
+deletes extras with `{ deleteExtra: true }`. Topics can be written as
+`products/update` or `PRODUCTS_UPDATE`. It cannot see subscriptions declared in
+`shopify.app.toml`; those are managed by Shopify and may be simpler for apps
+that only need app-wide webhooks.
+
+```ts
+import { syncWebhookSubscriptions } from '@richardmcquiston01/unofficial-shopify-api';
+
+const report = await syncWebhookSubscriptions(client, [
+  { topic: 'products/update', uri: 'https://app.example.com/webhooks' },
+  { topic: 'app/uninstalled', uri: 'https://app.example.com/webhooks' },
+]);
+```
+
 ### Examples
 
 [Back to Top](#table-of-contents)
