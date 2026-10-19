@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createHmac } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
@@ -26,6 +29,7 @@ import {
   runLiveCheck,
   type LiveCheckResult,
 } from '../examples/live-check.js';
+import { withTokenFile } from '../examples/live-support.js';
 import { runLiveBulkMutation } from '../examples/live-bulk-mutation.js';
 import { beginInstall, finishInstall } from '../examples/oauth.js';
 import { exportProductTitles, listProducts } from '../examples/products.js';
@@ -680,5 +684,33 @@ describe('live bulk mutation', () => {
     });
     expect(rejected).toHaveLength(1);
     expect(rejected[0]?.status).toBe('fail');
+  });
+});
+
+describe('token file', () => {
+  const write = (content: string): string => {
+    const directory: string = mkdtempSync(join(tmpdir(), 'token-'));
+    const path: string = join(directory, '.shopify-token');
+    writeFileSync(path, content);
+    return path;
+  };
+
+  it('fills a missing token from the file, trimmed', () => {
+    const env: Record<string, string | undefined> = withTokenFile(
+      { SHOPIFY_SHOP: 'a' },
+      write('shpat_file\n')
+    );
+    expect(env['SHOPIFY_ADMIN_TOKEN']).toBe('shpat_file');
+    expect(env['SHOPIFY_SHOP']).toBe('a');
+  });
+
+  it('lets the environment variable win, and ignores a missing or empty file', () => {
+    const set: Record<string, string> = { SHOPIFY_ADMIN_TOKEN: 'shpat_env' };
+    expect(withTokenFile(set, write('shpat_file'))).toBe(set);
+    const empty: Record<string, string> = {};
+    expect(withTokenFile(empty, join(tmpdir(), 'no-such-token-file'))).toBe(
+      empty
+    );
+    expect(withTokenFile(empty, write('  \n'))).toBe(empty);
   });
 });

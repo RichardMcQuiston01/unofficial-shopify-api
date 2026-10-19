@@ -30,6 +30,7 @@ import {
   printLiveCheck,
   step,
   unwrap,
+  withTokenFile,
   type Env,
   type LiveCheckResult,
 } from './live-support.js';
@@ -231,5 +232,7 @@ export async function runLiveBulkMutation(
 
 const entry: string | undefined = process.argv[1];
 if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
-  process.exitCode = printLiveCheck(await runLiveBulkMutation(process.env));
+  process.exitCode = printLiveCheck(
+    await runLiveBulkMutation(withTokenFile(process.env))
+  );
 }
