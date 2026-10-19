@@ -70,6 +70,7 @@
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:package && npm run check:bundle",
     "live-check": "tsx examples/live-check.ts",
     "live-bulk-mutation": "tsx examples/live-bulk-mutation.ts",
+    "dev-server": "tsx examples/dev-server.ts",
     "check:bundle": "node scripts/check-bundle.mjs",
     "test:runtimes": "node scripts/run-matrix.mjs"
   },

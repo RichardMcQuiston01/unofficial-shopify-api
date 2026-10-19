@@ -14,6 +14,7 @@ They are type-checked and linted with the library and exercised end to end by
 | `products.ts`           | Paging a connection, and exporting a catalog with a bulk operation streamed from disk.                                                        |
 | `live-check.ts`         | Read-only smoke test against a real shop: `npm run live-check` (see `docs/LIVE-TESTING.md`).                                                  |
 | `live-bulk-mutation.ts` | Tags one product through a bulk mutation, verifies it, removes the tag: `npm run live-bulk-mutation` (writes; needs `LIVE_ALLOW_WRITES=yes`). |
+| `dev-server.ts`         | A local server mounting the install and webhook handlers for live testing through a tunnel: `npm run dev-server` (testing only).              |
 | `next-app-router/`      | The same handlers mounted as Next.js route files.                                                                                             |
 
 Environment variables used by `configFromEnv`: `SHOPIFY_CLIENT_ID`,
