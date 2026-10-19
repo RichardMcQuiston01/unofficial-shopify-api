@@ -9,7 +9,7 @@
 
 ## Overview
 
-Framework agnostic TypeScript package for Shopify's API.  This package will be incorporated into any projects for Shopify plugins.  
+Framework agnostic TypeScript package for Shopify's API. This package will be incorporated into any projects for Shopify plugins.
 
 [Back to Top](#table-of-contents)
 

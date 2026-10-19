@@ -94,10 +94,10 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 ### M0: Foundation (v0.0.x, ~1 week)
 
 - [ ] Verify NPM package name / scope availability; create NPM org/token.
-- [ ] Configure Changesets and the release workflow.
-- [ ] Single-package `package.json` (with `exports` map), `tsconfig`, tsup, Vitest, ESLint, Prettier wiring.
-- [ ] CI workflow, issue/PR templates, CONTRIBUTING, SECURITY.md.
-- [ ] `Result` type, error classes, logger interface.
+- [x] Configure Changesets and the release workflow.
+- [x] Single-package `package.json` (with `exports` map), `tsconfig`, tsup, Vitest, ESLint, Prettier wiring.
+- [x] CI workflow, issue/PR templates, CONTRIBUTING, SECURITY.md.
+- [x] `Result` type, error classes, logger interface.
 - **Exit**: `npm run build && npm test` green in CI; empty package packs
   cleanly.
 
