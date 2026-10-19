@@ -63,5 +63,5 @@ Vercel edge runtime are exercised on every CI run (`npm run test:runtimes`).
 
 1.0.0 is gated on the manual live-store checklist in `docs/LIVE-TESTING.md`
 passing on at least one supported API version. To cut it, add a changeset with
-`major` for the package, merge `dev` to `main`, and merge the "version packages"
-PR that the release workflow opens.
+`major` for the package and follow [RELEASING.md](RELEASING.md): merge `dev` to
+`main`, merge the "version packages" PR, then push the `v1.0.0` tag.

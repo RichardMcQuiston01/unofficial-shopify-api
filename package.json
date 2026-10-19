@@ -66,7 +66,6 @@
     "check:package": "publint && attw --pack . --profile node16",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build && changeset publish",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:package && npm run check:bundle",
     "live-check": "tsx examples/live-check.ts",
     "live-bulk-mutation": "tsx examples/live-bulk-mutation.ts",

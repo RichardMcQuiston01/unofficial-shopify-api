@@ -84,7 +84,7 @@ npm i @richardmcquiston01/unofficial-shopify-api
 ## Checklist before publishing
 
 - [ ] `@richardmcquiston01` scope ownership confirmed on NPM
-- [ ] `dev` merged to `main` through a PR, "version packages" PR merged
+- [ ] `dev` merged to `main` through a PR, "version packages" PR merged, version tag pushed
 - [ ] Release shows 1.0.0 on NPM with provenance
 - [ ] Update the figures above if the bundle sizes or checks have changed
 - [ ] Post the short text only after the package is live

@@ -1,4 +1,7 @@
-name: Release
+name: Version
+
+# Opens or updates the "version packages" PR when changesets reach `main`.
+# It never publishes: publishing starts from a version tag (publish.yml).
 
 on:
   push:
@@ -9,11 +12,10 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write
   pull-requests: write
-  id-token: write # NPM provenance
 
 jobs:
-  release:
-    name: Version or publish
+  version:
+    name: Open or update the version PR
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,16 +23,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          registry-url: https://registry.npmjs.org
       - run: npm ci
-      - run: npm run verify
       - uses: changesets/action@v1
         with:
           version: npm run version-packages
-          publish: npm run release
           commit: 'chore(release): version packages'
           title: 'chore(release): version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
