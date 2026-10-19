@@ -94,57 +94,84 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 ### M0: Foundation (v0.0.x, ~1 week)
 
 - [ ] Verify NPM package name / scope availability; create NPM org/token.
-- [ ] Configure Changesets and the release workflow.
-- [ ] Single-package `package.json` (with `exports` map), `tsconfig`, tsup, Vitest, ESLint, Prettier wiring.
-- [ ] CI workflow, issue/PR templates, CONTRIBUTING, SECURITY.md.
-- [ ] `Result` type, error classes, logger interface.
+- [x] Configure Changesets and the release workflow.
+- [x] Single-package `package.json` (with `exports` map), `tsconfig`, tsup, Vitest, ESLint, Prettier wiring.
+- [x] CI workflow, issue/PR templates, CONTRIBUTING, SECURITY.md.
+- [x] `Result` type, error classes, logger interface.
 - **Exit**: `npm run build && npm test` green in CI; empty package packs
   cleanly.
 
 ### M1: Core Admin GraphQL Client (v0.1.0, ~2 weeks)
 
-- [ ] `createAdminClient({ shop, accessToken, apiVersion })`.
-- [ ] `request(document, variables)` returning `Result`, typed via codegen.
-- [ ] Error mapping (HTTP, GraphQL `errors`, `userErrors`).
-- [ ] Rate-limit awareness: cost tracking, throttle retry/backoff, `Retry-After`.
-- [ ] Unit + contract tests against recorded fixtures.
+- [x] `createAdminClient({ shop, accessToken, apiVersion })`. `apiVersion` is
+      required (no stale default); the shop must be a `.myshopify.com` host so
+      tokens cannot be sent elsewhere.
+- [x] `request(document, variables)` returning `Result`, typed via codegen.
+- [x] Error mapping (HTTP, GraphQL `errors`, `userErrors`).
+- [x] Rate-limit awareness: cost tracking, throttle retry/backoff, `Retry-After`.
+- [x] Unit + contract tests against recorded fixtures.
 - **Exit**: can query/mutate products and orders against a dev store.
 
 ### M2: Auth and Sessions (v0.2.0, ~2 weeks)
 
-- [ ] OAuth authorization-code flow (build URL, validate callback HMAC/state,
+- [x] OAuth authorization-code flow (build URL, validate callback HMAC/state,
       exchange code).
-- [ ] Token exchange flow for embedded apps; session-token JWT validation.
-- [ ] `SessionStorage` interface + in-memory implementation.
-- [ ] Prisma adapter (`/prisma` subpath export) with schema and tests.
-- **Exit**: end-to-end install flow demonstrated in an example Next.js app.
+- [x] Token exchange flow for embedded apps; session-token JWT validation.
+- [x] `SessionStorage` interface + in-memory implementation.
+- [x] `createKeyValueSessionStorage` bridge for `storage-adapters` (structural,
+      no dependency); Prisma adapter deferred, since `storage-adapters` already
+      covers Postgres, MySQL, SQLite and Redis.
+- [x] Expiring offline tokens and refresh (`refreshSession`): public apps need
+      them for the GraphQL Admin API from 2027-01-01.
+- **Exit**: unit-tested flows (done); end-to-end install against a dev store and
+  an example Next.js app still to do.
 
 ### M3: Webhooks (v0.3.0, ~1 week)
 
-- [ ] Timing-safe HMAC verification over raw body (Web Crypto, edge-safe).
-- [ ] Typed topic -> payload map; handler registry.
-- [ ] Subscription registration/sync via GraphQL.
-- **Exit**: verified webhooks processed in the example app.
+- [x] Timing-safe HMAC verification over raw body (Web Crypto, edge-safe).
+- [x] Typed topic -> payload map; handler registry.
+- [x] Subscription registration/sync via GraphQL.
+- **Exit**: unit-tested flows (done); a real delivery from a dev store and the
+  example app still to do.
 
 ### M4: Productivity Helpers (v0.4.0, ~2 weeks)
 
-- [ ] Cursor pagination async iterators.
-- [ ] Bulk operations (query + mutation), JSONL streaming parser.
-- [ ] Storefront API client (public + private tokens).
-- [ ] Idempotency / request-ID propagation, optional middleware hooks.
+- [x] Cursor pagination async iterators (`paginate`, `collectNodes`).
+- [x] Bulk operations (query + mutation, staged upload, polling, cancel) and a
+      streaming JSONL result reader.
+- [x] Storefront API client (public, private and tokenless access), on a
+      shared GraphQL engine with the Admin client.
+- [x] Request-ID propagation (client and per-request headers, `requestId` in
+      results) and an `onAttempt` hook for logging and metrics.
+- [ ] Idempotency keys for mutations (Shopify's `@idempotent` directive):
+      deferred; needs checking against the supported API versions first.
+- **Exit**: unit-tested (done); a real bulk query and Storefront request
+  against a dev store still to do.
 
 ### M5: Hardening and Beta (v0.9.0, ~2 weeks)
 
-- [ ] Runtime matrix tests: Node LTS lines, Edge runtime, Workers, Bun.
-- [ ] Bundle-size budget and dependency audit.
-- [ ] Security review (secret handling, no token logging, HMAC edge cases).
-- [ ] Complete docs, cookbook examples (Next.js, Hono, plain Node).
+- [x] Runtime matrix tests: Node 22/24 (ESM and CJS), Bun, Deno, an
+      edge-runtime VM and `workerd` without `nodejs_compat`
+      (`npm run test:runtimes`, a CI job).
+- [x] Bundle-size budget (`npm run check:bundle`), a neutral-platform bundle
+      check that fails on any Node-only import, and a no-dependencies check.
+- [x] Security review (`docs/SECURITY-REVIEW.md`): three findings fixed with
+      tests, plus a canary test that secrets never reach errors, logs or hooks.
+- [x] Complete docs and cookbook examples (Next.js App Router, framework-agnostic
+      handlers, bulk export), type-checked and exercised in tests.
+- [x] Live-shop checklist (`docs/LIVE-TESTING.md`) and a read-only
+      `npm run live-check`.
+- [ ] **Run the live-shop checklist on a development store** (needs the owner).
 - [ ] Public beta; collect feedback.
 
 ### M6: 1.0.0
 
-- [ ] Freeze public API, semver policy, deprecation policy.
-- [ ] API-version support policy (track Shopify's quarterly releases; a
+- [x] Live-shop checklist passed on at least one API version (2026-10; the
+      embedded token exchange and the Storefront query are not verified live,
+      see `docs/LIVE-TESTING.md`).
+- [x] Freeze public API, semver policy, deprecation policy
+      (`docs/VERSIONING.md`, `test/public-api.test.ts`).
+- [x] API-version support policy (track Shopify's quarterly releases; a
       scheduled workflow opens a PR when a new version ships).
 - [ ] Announce (README, NPM, social).
 
@@ -166,12 +193,13 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ## 6. Decisions
 
-| Question         | Decision                                                                                                  |
-| ---------------- | --------------------------------------------------------------------------------------------------------- |
-| Package layout   | Single package; Prisma adapter is a subpath export with an optional peer dependency                       |
-| Release tooling  | Changesets                                                                                                |
-| Node support     | Node LTS lines only                                                                                       |
-| Target app types | Both public and custom apps; published publicly on NPM and also consumed by the author's own Shopify apps |
+| Question         | Decision                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Package layout   | Single package; Prisma adapter is a subpath export with an optional peer dependency                                                  |
+| Release tooling  | Changesets                                                                                                                           |
+| Node support     | Node LTS lines only                                                                                                                  |
+| Companion libs   | `storage-adapters` and `error-log-adapter` are recommended in the README, not bundled or depended on; the core stays zero-dependency |
+| Target app types | Both public and custom apps; published publicly on NPM and also consumed by the author's own Shopify apps                            |
 
 Implications of supporting both app types: auth covers OAuth/token exchange
 (public apps) and static Admin API access tokens (custom apps); the public

@@ -1,0 +1,95 @@
+{
+  "name": "@richardmcquiston01/unofficial-shopify-api",
+  "version": "0.0.0",
+  "description": "Framework-agnostic, fully typed TypeScript client for Shopify's APIs.",
+  "license": "Apache-2.0",
+  "author": "Richard McQuiston <richard.mcquiston@gmail.com> (https://richardmcquiston.com/)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RichardMcQuiston01/unofficial-shopify-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RichardMcQuiston01/unofficial-shopify-api/issues"
+  },
+  "homepage": "https://github.com/RichardMcQuiston01/unofficial-shopify-api#readme",
+  "funding": {
+    "type": "individual",
+    "url": "https://donate.stripe.com/00w5kD3Gj1Xo9v7gVOcs800"
+  },
+  "keywords": [
+    "shopify",
+    "shopify-api",
+    "graphql",
+    "typescript",
+    "admin-api",
+    "storefront-api"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check:package": "publint && attw --pack . --profile node16",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:package && npm run check:bundle",
+    "live-check": "tsx examples/live-check.ts",
+    "live-bulk-mutation": "tsx examples/live-bulk-mutation.ts",
+    "dev-server": "tsx examples/dev-server.ts",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "test:runtimes": "node scripts/run-matrix.mjs"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.5",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.10",
+    "publint": "^0.3.25",
+    "tsup": "^9.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  }
+}
