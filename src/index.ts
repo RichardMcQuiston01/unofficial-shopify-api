@@ -7,12 +7,25 @@ export type {
   AssociatedUser,
   TokenRequestOptions,
 } from './auth/token-endpoint.js';
+export * from './bulk/bulk-operations.js';
+export * from './bulk/results.js';
 export * from './client/admin-client.js';
+export {
+  createGraphqlClient,
+  mergeHeaders,
+  type GraphqlClient,
+  type GraphqlClientConfig,
+} from './client/graphql-client.js';
+export * from './client/storefront-client.js';
 export { checkUserErrors, type WithUserErrors } from './client/user-errors.js';
 export type {
   AdminClientOptions,
   AdminRequestOptions,
   AdminResponse,
+  AttemptInfo,
+  GraphqlClientHooks,
+  GraphqlClientOptions,
+  GraphqlRequestOptions,
   GraphqlDocument,
   GraphqlVariables,
   QueryCost,
@@ -21,6 +34,7 @@ export type {
 } from './client/types.js';
 export * from './errors/errors.js';
 export * from './logger/logger.js';
+export * from './pagination/paginate.js';
 export * from './result/result.js';
 export * from './session/key-value-storage.js';
 export * from './session/memory-storage.js';

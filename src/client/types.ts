@@ -1,3 +1,4 @@
+import type { ShopifyError } from '../errors/errors.js';
 import type { Logger } from '../logger/logger.js';
 
 /** GraphQL variables for a request. */
@@ -53,16 +54,39 @@ export type Sleep = (
   signal?: AbortSignal
 ) => Promise<void>;
 
-export interface AdminClientOptions {
-  /** `example`, `example.myshopify.com`, or a URL on that host. */
-  readonly shop: string;
-  /** Admin API access token. Never logged or exposed by the client. */
-  readonly accessToken: string;
-  /** Explicit API version, `YYYY-MM` (such as `2026-10`) or `unstable`. */
-  readonly apiVersion: string;
+/** One HTTP attempt, reported to `hooks.onAttempt` for logging and metrics. */
+export interface AttemptInfo {
+  readonly operation: string;
+  /** 1 for the first try. */
+  readonly attempt: number;
+  readonly durationMs: number;
+  readonly ok: boolean;
+  /** Shopify's `X-Request-ID`, when a response arrived. */
+  readonly requestId: string | undefined;
+  /** HTTP status of a failed attempt, when a response arrived. */
+  readonly status: number | undefined;
+  readonly error: ShopifyError | undefined;
+}
+
+export interface GraphqlClientHooks {
+  /**
+   * Called after every attempt, including retries. Must not throw (if it does,
+   * the error is logged and ignored) and must not log credentials.
+   */
+  onAttempt?(info: AttemptInfo): void;
+}
+
+/** Options shared by every GraphQL client (Admin, Storefront). */
+export interface GraphqlClientOptions {
   /** Custom `fetch`, for tests, proxies or runtimes without a global. */
   readonly fetch?: typeof fetch;
   readonly logger?: Logger;
+  /**
+   * Extra headers sent on every request, such as `X-Request-ID` or
+   * `traceparent` for tracing. Credential and content headers cannot be replaced.
+   */
+  readonly headers?: Readonly<Record<string, string>>;
+  readonly hooks?: GraphqlClientHooks;
   /** Retries after the first attempt. Default 3. */
   readonly maxRetries?: number;
   /** First backoff delay in milliseconds. Default 500. */
@@ -77,7 +101,16 @@ export interface AdminClientOptions {
   readonly random?: () => number;
 }
 
-export interface AdminRequestOptions<
+export interface AdminClientOptions extends GraphqlClientOptions {
+  /** `example`, `example.myshopify.com`, or a URL on that host. */
+  readonly shop: string;
+  /** Admin API access token. Never logged or exposed by the client. */
+  readonly accessToken: string;
+  /** Explicit API version, `YYYY-MM` (such as `2026-10`) or `unstable`. */
+  readonly apiVersion: string;
+}
+
+export interface GraphqlRequestOptions<
   TVariables extends GraphqlVariables = GraphqlVariables,
 > {
   readonly variables?: TVariables;
@@ -86,4 +119,11 @@ export interface AdminRequestOptions<
   readonly signal?: AbortSignal;
   /** Overrides the client's `maxRetries` for this call. */
   readonly maxRetries?: number;
+  /** Extra headers for this call only, such as a per-request trace ID. */
+  readonly headers?: Readonly<Record<string, string>>;
 }
+
+/** Kept for compatibility; identical to `GraphqlRequestOptions`. */
+export type AdminRequestOptions<
+  TVariables extends GraphqlVariables = GraphqlVariables,
+> = GraphqlRequestOptions<TVariables>;

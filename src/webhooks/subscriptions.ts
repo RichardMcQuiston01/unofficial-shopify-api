@@ -6,6 +6,7 @@ import {
   type UserError,
   type UserErrorDetail,
 } from '../errors/errors.js';
+import { collectNodes, type ConnectionLike } from '../pagination/paginate.js';
 import { err, ok, type Result } from '../result/result.js';
 import { toGraphqlTopic } from './topics.js';
 
@@ -84,13 +85,7 @@ const deleteMutation: string = `
 `;
 
 interface ListData {
-  readonly webhookSubscriptions: {
-    readonly nodes: readonly WebhookSubscription[];
-    readonly pageInfo: {
-      readonly hasNextPage: boolean;
-      readonly endCursor: string | null;
-    };
-  };
+  readonly webhookSubscriptions: ConnectionLike<WebhookSubscription>;
 }
 
 interface SubscriptionPayloadData {
@@ -133,24 +128,13 @@ export function validateWebhookUri(
 }
 
 /** Lists every webhook subscription this app created in the shop. */
-export async function listWebhookSubscriptions(
+export function listWebhookSubscriptions(
   client: AdminClient
 ): Promise<Result<readonly WebhookSubscription[]>> {
-  const subscriptions: WebhookSubscription[] = [];
-  let after: string | null = null;
-  for (;;) {
-    const page: Result<AdminResponse<ListData>> =
-      await client.request<ListData>(listQuery, {
-        variables: { after },
-        operationName: 'WebhookSubscriptions',
-      });
-    if (!page.ok) return page;
-    const connection: ListData['webhookSubscriptions'] =
-      page.value.data.webhookSubscriptions;
-    subscriptions.push(...connection.nodes);
-    if (!connection.pageInfo.hasNextPage) return ok(subscriptions);
-    after = connection.pageInfo.endCursor;
-  }
+  return collectNodes<ListData, WebhookSubscription>(client, listQuery, {
+    select: (data: ListData) => data.webhookSubscriptions,
+    operationName: 'WebhookSubscriptions',
+  });
 }
 
 /** Creates one subscription. */
