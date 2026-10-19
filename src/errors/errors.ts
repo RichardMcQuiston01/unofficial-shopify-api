@@ -9,6 +9,8 @@ export type ShopifyErrorCode =
   | 'USER_ERROR'
   | 'WEBHOOK_VERIFICATION'
   | 'WEBHOOK_HANDLER'
+  | 'PAGINATION'
+  | 'BULK_OPERATION'
   | 'STORAGE';
 
 /** Details that make an error traceable back to a specific request. */
@@ -144,6 +146,39 @@ export class WebhookVerificationError extends ShopifyError {
 export class WebhookHandlerError extends ShopifyError {
   constructor(message: string, options: ShopifyErrorOptions = {}) {
     super('WEBHOOK_HANDLER', message, options);
+  }
+}
+
+/** Paging through a connection failed (missing connection, stuck cursor, page limit). */
+export class PaginationError extends ShopifyError {
+  constructor(message: string, options: ShopifyErrorOptions = {}) {
+    super('PAGINATION', message, options);
+  }
+}
+
+export interface BulkOperationErrorOptions extends ShopifyErrorOptions {
+  readonly bulkOperationId: string;
+  /** Final or last-seen status, such as `FAILED` or `CANCELED`. */
+  readonly status: string;
+  /** `ACCESS_DENIED`, `INTERNAL_SERVER_ERROR` or `TIMEOUT` for failed operations. */
+  readonly errorCode: string | null;
+  /** Partial results of a failed operation (JSONL), valid for 7 days. */
+  readonly partialDataUrl: string | null;
+}
+
+/** A bulk operation did not complete: it failed, was canceled, expired or timed out waiting. */
+export class BulkOperationError extends ShopifyError {
+  readonly bulkOperationId: string;
+  readonly status: string;
+  readonly errorCode: string | null;
+  readonly partialDataUrl: string | null;
+
+  constructor(message: string, options: BulkOperationErrorOptions) {
+    super('BULK_OPERATION', message, options);
+    this.bulkOperationId = options.bulkOperationId;
+    this.status = options.status;
+    this.errorCode = options.errorCode;
+    this.partialDataUrl = options.partialDataUrl;
   }
 }
 

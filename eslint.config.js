@@ -36,6 +36,7 @@ export default defineConfig(
         { selector: 'typeLike', format: ['PascalCase'] },
         { selector: 'enumMember', format: ['UPPER_CASE'] },
         { selector: 'objectLiteralProperty', format: null },
+        { selector: 'objectLiteralMethod', format: null },
         { selector: 'import', format: null },
       ],
     },

@@ -210,6 +210,117 @@ const report = await syncWebhookSubscriptions(client, [
 ]);
 ```
 
+#### Pagination
+
+`paginate` walks a cursor-paginated connection page by page. The query declares
+`$after: String` and passes it to the connection. After an `Err` the iteration
+ends. `collectNodes` gathers everything into one array.
+
+```ts
+import {
+  collectNodes,
+  paginate,
+} from '@richardmcquiston01/unofficial-shopify-api';
+
+const query = `query Products($after: String) {
+  products(first: 100, after: $after) {
+    nodes { id title }
+    pageInfo { hasNextPage endCursor }
+  }
+}`;
+interface Data {
+  products: {
+    nodes: { id: string; title: string }[];
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  };
+}
+
+for await (const page of paginate<Data, Data['products']['nodes'][number]>(
+  client,
+  query,
+  {
+    select: (data) => data.products,
+  }
+)) {
+  if (!page.ok) return page; // stops here
+  for (const product of page.value) console.log(product.title);
+}
+```
+
+Both `nodes` and `edges { node }` are understood. A cursor that does not advance,
+a missing connection, or more than `maxPages` (default 1000) pages is reported
+as a `PaginationError` rather than looping.
+
+#### Bulk operations
+
+For large exports and imports use bulk operations. `runBulkQuery` starts one and
+waits for it; `streamBulkResults` then reads the JSONL file line by line
+without loading it into memory. Child rows carry the `__parentId` of their
+parent.
+
+```ts
+import {
+  runBulkQuery,
+  streamBulkResults,
+} from '@richardmcquiston01/unofficial-shopify-api';
+
+const done = await runBulkQuery(
+  client,
+  `{ products { edges { node { id title variants { edges { node { id sku } } } } } } }`,
+  { onProgress: (operation) => console.log(operation.objectCount) }
+);
+if (!done.ok) return done; // BulkOperationError carries status, errorCode, partialDataUrl
+
+for await (const row of streamBulkResults(done.value.url)) {
+  if (!row.ok) return row;
+  console.log(row.value);
+}
+```
+
+`runBulkMutation(client, mutation, rows)` uploads the variables (one JSON object
+per line) to a staged upload, starts the mutation, and waits. The result file
+is downloaded without your access token. Polling backs off from 2 to 10
+seconds and gives up waiting after an hour by default (the operation keeps
+running; `cancelBulkOperation` stops it). Subscribing to the
+`bulk_operations/finish` webhook avoids polling.
+
+#### Storefront API
+
+```ts
+import { createStorefrontClient } from '@richardmcquiston01/unofficial-shopify-api';
+
+const created = createStorefrontClient({
+  shop: 'example',
+  apiVersion: '2026-10',
+  privateAccessToken: storefrontPrivateToken, // a string from your secrets; server only
+});
+```
+
+Use `publicAccessToken` for browsers and mobile apps, `privateAccessToken` for
+servers (never ship it to a client), or neither for tokenless access to the
+features that allow it. For requests that result from buyer traffic, pass the
+buyer's address, `client.request(query, { buyerIp })`, so Shopify can tell
+buyers apart for throttling and bot protection.
+
+#### Tracing and metrics
+
+Both clients accept `headers` (every request) and per-request `headers`, for
+example `traceparent` or `X-Request-ID`. Credential and content headers cannot
+be replaced. Every successful result has Shopify's `requestId`, and
+`hooks.onAttempt` is called after each HTTP attempt, retries included, with the
+operation, attempt number, duration, status and request ID:
+
+```ts
+createAdminClient({
+  shop,
+  apiVersion,
+  accessToken,
+  hooks: {
+    onAttempt: (a) => metrics.timing('shopify', a.durationMs, { ok: a.ok }),
+  },
+});
+```
+
 ### Examples
 
 [Back to Top](#table-of-contents)

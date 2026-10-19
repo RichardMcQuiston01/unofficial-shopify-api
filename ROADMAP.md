@@ -136,10 +136,17 @@ Prisma adapter schema (optional package): table `shopify_session` with UUID
 
 ### M4: Productivity Helpers (v0.4.0, ~2 weeks)
 
-- [ ] Cursor pagination async iterators.
-- [ ] Bulk operations (query + mutation), JSONL streaming parser.
-- [ ] Storefront API client (public + private tokens).
-- [ ] Idempotency / request-ID propagation, optional middleware hooks.
+- [x] Cursor pagination async iterators (`paginate`, `collectNodes`).
+- [x] Bulk operations (query + mutation, staged upload, polling, cancel) and a
+      streaming JSONL result reader.
+- [x] Storefront API client (public, private and tokenless access), on a
+      shared GraphQL engine with the Admin client.
+- [x] Request-ID propagation (client and per-request headers, `requestId` in
+      results) and an `onAttempt` hook for logging and metrics.
+- [ ] Idempotency keys for mutations (Shopify's `@idempotent` directive):
+      deferred; needs checking against the supported API versions first.
+- **Exit**: unit-tested (done); a real bulk query and Storefront request
+  against a dev store still to do.
 
 ### M5: Hardening and Beta (v0.9.0, ~2 weeks)
 
