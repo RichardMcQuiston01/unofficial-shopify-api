@@ -130,4 +130,4 @@ the library takes from the `key` parameter.
 | Install flow                    |            |                  |             |                                                                                                                                       |
 | Token exchange and refresh      |            |                  |             |                                                                                                                                       |
 | Webhook delivery and replay     |            |                  |             |                                                                                                                                       |
-| Bulk mutation                   |            |                  |             |                                                                                                                                       |
+| Bulk mutation                   | 2026-10-19 | unreleased (dev) | 2026-10     | Pass: staged upload, bulk mutation, tag verified, tag removed.                                                                        |
