@@ -151,10 +151,10 @@ the library takes from the `key` parameter.
 
 ## Record
 
-| Check                           | Date       | Library version  | API version | Result                                                                                                                                |
-| ------------------------------- | ---------- | ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Automated checks (`live-check`) | 2026-10-19 | unreleased (dev) | 2026-10     | Pass for the shop query, pagination, webhook listing and bulk query. Storefront failed: Online Store channel locked on the dev store. |
-| Install flow                    |            |                  |             |                                                                                                                                       |
-| Token exchange and refresh      |            |                  |             |                                                                                                                                       |
-| Webhook delivery and replay     |            |                  |             |                                                                                                                                       |
-| Bulk mutation                   | 2026-10-19 | unreleased (dev) | 2026-10     | Pass: staged upload, bulk mutation, tag verified, tag removed.                                                                        |
+| Check                           | Date       | Library version  | API version | Result                                                                                                                                                                                        |
+| ------------------------------- | ---------- | ---------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Automated checks (`live-check`) | 2026-10-19 | unreleased (dev) | 2026-10     | Pass for the shop query, pagination, webhook listing and bulk query. Storefront failed: Online Store channel locked on the dev store.                                                         |
+| Install flow                    | 2026-10-19 | unreleased (dev) | 2026-10     | Pass: callback signature and state check, code exchange, expiring offline token with a refresh token, webhook subscriptions created (via `npm run dev-server` and a Cloudflare quick tunnel). |
+| Token exchange and refresh      |            |                  |             |                                                                                                                                                                                               |
+| Webhook delivery and replay     | 2026-10-19 | unreleased (dev) | 2026-10     | Delivery passed: a real `products/update` delivery verified and answered 200. Replay and tampered-body checks not yet run live.                                                               |
+| Bulk mutation                   | 2026-10-19 | unreleased (dev) | 2026-10     | Pass: staged upload, bulk mutation, tag verified, tag removed.                                                                                                                                |
